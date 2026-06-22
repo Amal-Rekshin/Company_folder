@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 font-sans antialiased;
+  }
+}
+
+@layer components {
+  /* Premium Glassmorphism Cards */
+  .glass-card {
+    @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-2xl;
+  }
+  
+  .glass-card-dark {
+    @apply bg-dark-800/80 backdrop-blur-md border border-dark-700 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-2xl text-white;
+  }
+
+  /* Interactive Buttons */
+  .btn-primary {
+    @apply bg-primary-600 text-white font-medium py-2 px-4 rounded-xl shadow-lg shadow-primary-500/30 hover:bg-primary-700 hover:shadow-primary-500/40 hover:-translate-y-0.5 transition-all active:translate-y-0;
+  }
+  
+  .btn-secondary {
+    @apply bg-white text-slate-700 font-medium py-2 px-4 rounded-xl shadow-sm border border-slate-200 hover:bg-slate-50 hover:shadow-md hover:-translate-y-0.5 transition-all active:translate-y-0;
+  }
+
+  /* Inputs */
+  .input-field {
+    @apply w-full rounded-xl border border-slate-200 bg-white/50 px-4 py-2.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-4 focus:ring-primary-500/10 transition-all;
+  }
+}
+
+@keyframes spin-reverse {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+.animate-spin-reverse {
+  animation: spin-reverse 1.5s linear infinite;
+}
