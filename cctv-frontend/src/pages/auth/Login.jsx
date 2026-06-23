@@ -39,6 +39,11 @@ const Login = () => {
       password : 'password123'
     },
     {
+      name : 'Vasanth',
+      username : 'vasanh@gmail.com',
+      password : 'vasanth'
+    },
+    {
       name : 'Partner',
       username : "partner@cctv.com",
       password : 'password123'

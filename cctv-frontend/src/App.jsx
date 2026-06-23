@@ -17,7 +17,9 @@ import PaymentPage from './pages/customer/PaymentPage';
 // Admin Pages
 import AllTicketsPage from './pages/admin/AllTicketsPage';
 import UserManagementPage from './pages/admin/UserManagementPage';
+import TechnicianDetailPage from './pages/admin/TechnicianDetailPage';
 import PartnerManagementPage from './pages/admin/PartnerManagementPage';
+import PartnerDetailPage from './pages/admin/PartnerDetailPage';
 import SettlementPage from './pages/admin/SettlementPage';
 
 // Technician Pages
@@ -72,7 +74,9 @@ const App = () => {
                 <Route path="/admin/tickets" element={<AllTicketsPage />} />
                 <Route path="/admin/tickets/:id" element={<TicketDetailPage />} />
                 <Route path="/admin/technicians" element={<UserManagementPage />} />
+                <Route path="/admin/technicians/:id" element={<TechnicianDetailPage />} />
                 <Route path="/admin/partners" element={<PartnerManagementPage />} />
+                <Route path="/admin/partners/:id" element={<PartnerDetailPage />} />
                 <Route path="/admin/settlements" element={<SettlementPage />} />
                 <Route path="/admin/reports" element={<ReportsPage />} />
                 
@@ -81,6 +85,7 @@ const App = () => {
                 <Route path="/admin/leads" element={<LeadsPage />} />
                 <Route path="/admin/leads/:id" element={<LeadDetailPage />} />
                 <Route path="/admin/leads/:id/create-quotation" element={<QuotationForm />} />
+                <Route path="/admin/leads/:id/edit-quotation/:quotationId" element={<QuotationForm />} />
                 <Route path="/admin/quotations" element={<QuotationsPage />} />
               </Route>
             </Route>

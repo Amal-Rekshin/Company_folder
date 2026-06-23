@@ -18,6 +18,31 @@ async function initializeDatabase() {
     let shouldSeed = !checkTable.rows[0].exists;
 
     if (checkTable.rows[0].exists) {
+      // Check if customer_id exists in leads table, if not add it
+      const checkLeadsCol = await client.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.columns 
+          WHERE table_name = 'leads' AND column_name = 'customer_id'
+        );
+      `);
+      if (!checkLeadsCol.rows[0].exists) {
+        console.log('⚠️ Adding customer_id column to leads table...');
+        await client.query('ALTER TABLE leads ADD COLUMN customer_id UUID REFERENCES users(id) ON DELETE SET NULL;');
+      }
+
+      // Check if customer_name exists in quotations table, if not add customer_name and customer_phone
+      const checkQuotationsCustomerCol = await client.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.columns 
+          WHERE table_name = 'quotations' AND column_name = 'customer_name'
+        );
+      `);
+      if (!checkQuotationsCustomerCol.rows[0].exists) {
+        console.log('⚠️ Adding customer_name and customer_phone columns to quotations table...');
+        await client.query('ALTER TABLE quotations ADD COLUMN customer_name VARCHAR(100);');
+        await client.query('ALTER TABLE quotations ADD COLUMN customer_phone VARCHAR(50);');
+      }
+
       // Check if quotations table needs upgrade
       const checkQuotationsCol = await client.query(`
         SELECT EXISTS (
@@ -29,6 +54,30 @@ async function initializeDatabase() {
         console.log('⚠️ quotations table is outdated. Re-creating quotations and quotation_items...');
         await client.query('DROP TABLE IF EXISTS quotations CASCADE;');
       } else {
+        // ── Run incremental migrations ──────────────────────────────────────────
+        // Migration: create ticket_status_log if missing
+        const checkStatusLog = await client.query(`
+          SELECT EXISTS (
+            SELECT FROM information_schema.tables
+            WHERE table_schema = 'public' AND table_name = 'ticket_status_log'
+          );
+        `);
+        if (!checkStatusLog.rows[0].exists) {
+          console.log('⚠️ Creating missing ticket_status_log table...');
+          await client.query(`
+            CREATE TABLE ticket_status_log (
+              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+              ticket_id UUID REFERENCES tickets(id) ON DELETE CASCADE,
+              from_status VARCHAR(50),
+              to_status VARCHAR(50),
+              changed_by UUID REFERENCES users(id) ON DELETE SET NULL,
+              note TEXT,
+              changed_at TIMESTAMP DEFAULT NOW()
+            );
+          `);
+          console.log('✅ ticket_status_log table created.');
+        }
+
         console.log('✅ Database schema already exists. Skipping initialization.');
         return;
       }
@@ -185,6 +234,7 @@ async function initializeDatabase() {
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         query_id UUID REFERENCES queries(id) ON DELETE CASCADE,
         assigned_to UUID REFERENCES users(id) ON DELETE SET NULL,
+        customer_id UUID REFERENCES users(id) ON DELETE SET NULL,
         status VARCHAR(50) DEFAULT 'new',
         notes TEXT,
         created_at TIMESTAMP DEFAULT NOW(),
@@ -207,6 +257,8 @@ async function initializeDatabase() {
         sent_at TIMESTAMP,
         responded_at TIMESTAMP,
         rejection_reason TEXT,
+        customer_name VARCHAR(100),
+        customer_phone VARCHAR(50),
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       );
@@ -290,8 +342,8 @@ async function initializeDatabase() {
 
       // Seed Leads
       await client.query(
-        `INSERT INTO leads (query_id, assigned_to, status, notes) VALUES ($1, $2, 'new', 'Customer called yesterday')`,
-        [query1Res.rows[0].id, adminId]
+        `INSERT INTO leads (query_id, assigned_to, customer_id, status, notes) VALUES ($1, $2, $3, 'new', 'Customer called yesterday')`,
+        [query1Res.rows[0].id, adminId, customerId]
       );
 
       // Seed Tickets

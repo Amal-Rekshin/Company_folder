@@ -5,6 +5,7 @@ const ctrl = require('../../controllers/admin/adminLead.controller');
 const admin = [verifyToken, requireRole('admin')];
 
 router.get('/', ...admin, ctrl.getAllLeads);
+router.post('/', ...admin, ctrl.createLead);
 router.get('/:id', ...admin, ctrl.getLead);
 router.patch('/:id/assign', ...admin, ctrl.assignLead);
 router.post('/:id/notes', ...admin, ctrl.addNote);

@@ -106,7 +106,7 @@ async function acceptTechnicianAssignment(req, res, next) {
 
     await client.query(
       `UPDATE technician_assignments
-       SET status = 'accepted', accepted_at = NOW() WHERE id = $1`,
+       SET status = 'accepted', updated_at = NOW() WHERE id = $1`,
       [assignmentId]
     );
     await client.query('COMMIT');
@@ -142,8 +142,8 @@ async function rejectTechnicianAssignment(req, res, next) {
 
     await client.query(
       `UPDATE technician_assignments
-       SET status = 'rejected', rejected_at = NOW(), rejection_reason = $1 WHERE id = $2`,
-      [reason, assignmentId]
+       SET status = 'rejected', updated_at = NOW() WHERE id = $1`,
+      [assignmentId]
     );
     await client.query('COMMIT');
 
@@ -177,7 +177,7 @@ async function acceptPartnerAssignment(req, res, next) {
 
     await client.query(
       `UPDATE partner_assignments
-       SET status = 'accepted', accepted_at = NOW() WHERE id = $1`,
+       SET status = 'accepted', updated_at = NOW() WHERE id = $1`,
       [assignmentId]
     );
     await client.query('COMMIT');
@@ -213,8 +213,8 @@ async function rejectPartnerAssignment(req, res, next) {
 
     await client.query(
       `UPDATE partner_assignments
-       SET status = 'rejected', rejected_at = NOW(), rejection_reason = $1 WHERE id = $2`,
-      [reason, assignmentId]
+       SET status = 'rejected', updated_at = NOW() WHERE id = $1`,
+      [assignmentId]
     );
     await client.query('COMMIT');
 
@@ -235,7 +235,10 @@ async function assignTechnicianByPartner(req, res, next) {
   try {
     const assignmentId = req.params.id;
     const partnerId = req.user.id;
-    const { technicianId } = req.body;
+    const { technicianName } = req.body;
+
+    if (!technicianName || !technicianName.trim())
+      throw new AppError('Technician name is required', 400);
 
     // Verify partner has accepted this assignment
     const paResult = await query(
@@ -248,26 +251,10 @@ async function assignTechnicianByPartner(req, res, next) {
       throw new AppError('You must accept the ticket before assigning a technician', 400);
     const pa = paResult.rows[0];
 
-    const techResult = await query(
-      'SELECT id, name, role FROM users WHERE id = $1', [technicianId]
-    );
-    if (techResult.rows.length === 0) throw new AppError('Technician not found', 404);
-    const tech = techResult.rows[0];
-    if (tech.role !== 'technician') throw new AppError('User is not a technician', 400);
-
-    await query(
-      `INSERT INTO technician_assignments (ticket_id, technician_id, status)
-       VALUES ($1, $2, 'pending')`,
-      [pa.ticket_id, technicianId]
-    );
-
     await _updateTicketStatus(pa.ticket_id, 'technician_assigned',
-      `Partner assigned to technician ${tech.name}`, partnerId);
+      `Partner assigned technician: ${technicianName.trim()}`, partnerId);
 
-    await createNotification(technicianId, 'New Assignment',
-      `You have been assigned to ticket ${pa.ticket_number} by a Partner.`, 'assignment', pa.ticket_id);
-
-    return res.status(200).json({ message: 'Technician assigned by partner' });
+    return res.status(200).json({ message: 'Technician assigned', technicianName: technicianName.trim() });
   } catch (err) {
     next(err);
   }
@@ -292,6 +279,48 @@ async function _updateTicketStatus(ticketId, newStatus, note, changedById) {
   );
 }
 
+// GET /api/partner-assignments/by-ticket/:ticketId  (partner)
+async function getPartnerAssignmentByTicket(req, res, next) {
+  try {
+    const ticketId = req.params.ticketId;
+    const partnerId = req.user.id;
+    const result = await query(
+      `SELECT pa.id, pa.status, pa.assigned_at
+       FROM partner_assignments pa
+       WHERE pa.ticket_id = $1 AND pa.partner_id = $2
+       ORDER BY pa.assigned_at DESC
+       LIMIT 1`,
+      [ticketId, partnerId]
+    );
+    if (result.rows.length === 0)
+      return res.status(404).json({ error: 'Assignment not found' });
+    return res.json(result.rows[0]);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// GET /api/technician-assignments/by-ticket/:ticketId  (technician)
+async function getTechnicianAssignmentByTicket(req, res, next) {
+  try {
+    const ticketId = req.params.ticketId;
+    const technicianId = req.user.id;
+    const result = await query(
+      `SELECT ta.id, ta.status, ta.assigned_at
+       FROM technician_assignments ta
+       WHERE ta.ticket_id = $1 AND ta.technician_id = $2
+       ORDER BY ta.assigned_at DESC
+       LIMIT 1`,
+      [ticketId, technicianId]
+    );
+    if (result.rows.length === 0)
+      return res.status(404).json({ error: 'Assignment not found' });
+    return res.json(result.rows[0]);
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   assignTechnician,
   assignPartner,
@@ -300,4 +329,7 @@ module.exports = {
   acceptPartnerAssignment,
   rejectPartnerAssignment,
   assignTechnicianByPartner,
+  getPartnerAssignmentByTicket,
+  getTechnicianAssignmentByTicket,
 };
+

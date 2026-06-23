@@ -8,6 +8,7 @@ router.get('/', ...admin, ctrl.getAllQuotations);
 router.get('/lead/:leadId', ...admin, ctrl.getQuotationsByLead);
 router.get('/:id', ...admin, ctrl.getQuotation);
 router.post('/lead/:leadId', ...admin, ctrl.createQuotation);
+router.put('/:id', ...admin, ctrl.updateQuotation);
 router.post('/:id/send', ...admin, ctrl.sendQuotation);
 
 module.exports = router;

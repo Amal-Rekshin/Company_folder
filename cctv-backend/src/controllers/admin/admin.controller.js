@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const { query } = require('../../config/db');
+const { query, getClient } = require('../../config/db');
 const { generateTicketNumber } = require('../../utils/ticketNumber');
 const AppError = require('../../utils/AppError');
 
@@ -105,40 +105,62 @@ async function createTicket(req, res, next) {
 
 // POST /api/admin/tickets/:id/assign  (admin)
 async function assignTicket(req, res, next) {
+  const client = await getClient();
   try {
+    await client.query('BEGIN');
     const ticketId = req.params.id;
     const { assigneeId } = req.body;
-    const adminId = req.user.id;
 
-    const assigneeResult = await query(
+    const assigneeResult = await client.query(
       'SELECT id, name, role FROM users WHERE id = $1', [assigneeId]
     );
     if (assigneeResult.rows.length === 0) throw new AppError('Assignee not found', 404);
     const assignee = assigneeResult.rows[0];
 
+    // 1. Remove existing technician and partner assignments for this ticket
+    await client.query(
+      `DELETE FROM technician_assignments WHERE ticket_id = $1`, 
+      [ticketId]
+    );
+    await client.query(
+      `DELETE FROM partner_assignments WHERE ticket_id = $1`, 
+      [ticketId]
+    );
+
+    // 2. Remove existing schedules for this ticket
+    await client.query(
+      `DELETE FROM schedules WHERE ticket_id = $1`, 
+      [ticketId]
+    );
+
+    // 3. Create new assignment and update ticket status
     if (assignee.role === 'technician') {
-      await query(
+      await client.query(
         `INSERT INTO technician_assignments (ticket_id, technician_id, status) VALUES ($1,$2,'pending')`,
         [ticketId, assigneeId]
       );
-      await query(
+      await client.query(
         `UPDATE tickets SET status = 'assigned', updated_at = NOW() WHERE id = $1`, [ticketId]
       );
     } else if (assignee.role === 'partner') {
-      await query(
+      await client.query(
         `INSERT INTO partner_assignments (ticket_id, partner_id, status) VALUES ($1,$2,'pending')`,
         [ticketId, assigneeId]
       );
-      await query(
+      await client.query(
         `UPDATE tickets SET status = 'partner_assigned', updated_at = NOW() WHERE id = $1`, [ticketId]
       );
     } else {
       throw new AppError('Assignee must be a technician or partner', 400);
     }
 
+    await client.query('COMMIT');
     return res.status(200).json({ message: 'Assigned successfully' });
   } catch (err) {
+    await client.query('ROLLBACK');
     next(err);
+  } finally {
+    client.release();
   }
 }
 
@@ -321,11 +343,14 @@ async function getTechnicianDetails(req, res, next) {
     const technician = userResult.rows[0];
 
     const ticketsResult = await query(
-      `SELECT t.id, t.ticket_number, t.service_type, t.priority, t.status, t.created_at, ta.status AS assignment_status
-       FROM tickets t
-       JOIN technician_assignments ta ON ta.ticket_id = t.id
-       WHERE ta.technician_id = $1
-       ORDER BY t.created_at DESC`,
+      `SELECT * FROM (
+         SELECT DISTINCT ON (t.id) t.id, t.ticket_number, t.service_type, t.priority, t.status, t.created_at, ta.status AS assignment_status
+         FROM tickets t
+         JOIN technician_assignments ta ON ta.ticket_id = t.id
+         WHERE ta.technician_id = $1
+         ORDER BY t.id, t.created_at DESC
+       ) sub
+       ORDER BY sub.created_at DESC`,
       [id]
     );
 
@@ -384,6 +409,117 @@ async function updateTechnician(req, res, next) {
   }
 }
 
+// GET /api/admin/customers/addresses (admin)
+async function getCustomersWithAddresses(req, res, next) {
+  try {
+    const result = await query(
+      `SELECT u.id, u.name, u.email, u.phone,
+              t.svc_address, t.svc_city, t.svc_state, t.svc_pincode
+       FROM users u
+       LEFT JOIN (
+         SELECT DISTINCT ON (customer_id) customer_id, svc_address, svc_city, svc_state, svc_pincode
+         FROM tickets
+         ORDER BY customer_id, created_at DESC
+       ) t ON t.customer_id = u.id
+       WHERE u.role = 'customer' AND u.is_active = true
+       ORDER BY u.name ASC`
+    );
+    return res.json(result.rows);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// GET /api/admin/partners/:id (admin)
+async function getPartnerDetails(req, res, next) {
+  try {
+    const { id } = req.params;
+    const userResult = await query(
+      `SELECT u.id, u.name, u.email, u.phone, u.role, u.is_active,
+              pp.company_name, pp.commission_rate
+       FROM users u
+       JOIN partner_profiles pp ON pp.user_id = u.id
+       WHERE u.id = $1 AND u.role = 'partner'`,
+      [id]
+    );
+
+    if (userResult.rows.length === 0) {
+      throw new AppError('Partner not found', 404);
+    }
+
+    const partner = userResult.rows[0];
+
+    const ticketsResult = await query(
+      `SELECT * FROM (
+         SELECT DISTINCT ON (t.id) t.id, t.ticket_number, t.service_type, t.priority, t.status, t.created_at, pa.status AS assignment_status
+         FROM tickets t
+         JOIN partner_assignments pa ON pa.ticket_id = t.id
+         WHERE pa.partner_id = $1
+         ORDER BY t.id, t.created_at DESC
+       ) sub
+       ORDER BY sub.created_at DESC`,
+      [id]
+    );
+
+    partner.tickets = ticketsResult.rows;
+
+    return res.json(partner);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// PUT /api/admin/partners/:id (admin)
+async function updatePartner(req, res, next) {
+  const { id } = req.params;
+  const { name, email, phone, is_active, companyName, commissionRate } = req.body;
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+
+    // Update user table
+    const userResult = await client.query(
+      `UPDATE users
+       SET name = $1, email = $2, phone = $3, is_active = $4, updated_at = NOW()
+       WHERE id = $5 AND role = 'partner'
+       RETURNING id`,
+      [name, email, phone, is_active, id]
+    );
+
+    if (userResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      throw new AppError('Partner not found', 404);
+    }
+
+    // Update partner profile
+    await client.query(
+      `UPDATE partner_profiles
+       SET company_name = $1, commission_rate = $2
+       WHERE user_id = $3`,
+      [companyName, parseFloat(commissionRate) || 10.0, id]
+    );
+
+    await client.query('COMMIT');
+
+    // Fetch final result to return
+    const finalResult = await query(
+      `SELECT u.id, u.name, u.email, u.phone, u.role, u.is_active,
+              pp.company_name, pp.commission_rate
+       FROM users u
+       JOIN partner_profiles pp ON pp.user_id = u.id
+       WHERE u.id = $1`,
+      [id]
+    );
+
+    return res.json(finalResult.rows[0]);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    next(err);
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   getUsers,
   toggleActive,
@@ -400,4 +536,7 @@ module.exports = {
   getTicketAging,
   getTechnicianDetails,
   updateTechnician,
+  getCustomersWithAddresses,
+  getPartnerDetails,
+  updatePartner,
 };

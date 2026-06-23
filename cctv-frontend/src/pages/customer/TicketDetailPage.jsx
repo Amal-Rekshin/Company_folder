@@ -107,36 +107,36 @@ const TicketDetailPage = () => {
 
       {/* Estimate Modal */}
       {showEstimateModal && estimate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <GlassCard className="w-full max-w-lg relative">
-            <button onClick={() => setShowEstimateModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><X className="w-6 h-6" /></button>
-            <h2 className="text-xl font-bold text-slate-800 mb-6">Service Estimate</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg bg-white border border-slate-200/80 shadow-2xl rounded-2xl p-6 relative text-slate-800">
+            <button onClick={() => setShowEstimateModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"><X className="w-6 h-6" /></button>
+            <h2 className="text-xl font-bold text-slate-900 mb-6">Service Estimate</h2>
             
             <div className="space-y-4 mb-6">
-              <div className="flex justify-between border-b pb-2">
+              <div className="flex justify-between border-b border-slate-100 pb-2">
                 <span className="font-medium text-slate-600">Total Amount:</span>
-                <span className="font-bold text-slate-800">₹{estimate.totalAmount}</span>
+                <span className="font-bold text-slate-900 text-lg">₹{estimate.totalAmount}</span>
               </div>
               <div>
                 <span className="font-medium text-slate-600 block mb-1">Details:</span>
-                <p className="text-sm text-slate-700 bg-slate-50 p-3 rounded-lg border">{estimate.details || "No specific details provided."}</p>
+                <p className="text-sm text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-200">{estimate.details || "No specific details provided."}</p>
               </div>
             </div>
 
-            <div className="flex gap-4">
+            <div className="flex gap-4 pt-4 border-t border-slate-100">
               <Button onClick={() => approveEstimateMutation.mutate(estimate.id)} disabled={approveEstimateMutation.isPending} className="flex-1 bg-emerald-600 hover:bg-emerald-700">Approve Estimate</Button>
               <Button variant="secondary" onClick={() => setShowEstimateModal(false)} className="flex-1">Close</Button>
             </div>
-          </GlassCard>
+          </div>
         </div>
       )}
 
       {/* Feedback Modal */}
       {showFeedbackModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <GlassCard className="w-full max-w-lg relative">
-            <button onClick={() => setShowFeedbackModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><X className="w-6 h-6" /></button>
-            <h2 className="text-xl font-bold text-slate-800 mb-6">Service Feedback</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg bg-white border border-slate-200/80 shadow-2xl rounded-2xl p-6 relative text-slate-800">
+            <button onClick={() => setShowFeedbackModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"><X className="w-6 h-6" /></button>
+            <h2 className="text-xl font-bold text-slate-900 mb-6">Service Feedback</h2>
             
             <form onSubmit={(e) => { e.preventDefault(); feedbackMutation.mutate(feedbackData); }} className="space-y-4">
               <div>
@@ -145,7 +145,7 @@ const TicketDetailPage = () => {
                   {[1,2,3,4,5].map(num => (
                     <Star 
                       key={num} 
-                      className={`w-8 h-8 cursor-pointer ${feedbackData.rating >= num ? 'text-yellow-400 fill-yellow-400' : 'text-slate-300'}`} 
+                      className={`w-8 h-8 cursor-pointer transition-all ${feedbackData.rating >= num ? 'text-yellow-400 fill-yellow-400 scale-110' : 'text-slate-300 hover:text-yellow-300'}`} 
                       onClick={() => setFeedbackData({...feedbackData, rating: num})}
                     />
                   ))}
@@ -159,16 +159,16 @@ const TicketDetailPage = () => {
                   onChange={(e) => setFeedbackData({...feedbackData, comments: e.target.value})} 
                   required 
                   rows={4} 
-                  className="w-full px-4 py-2 bg-white/50 border border-slate-200 rounded-xl outline-none resize-none"
+                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl outline-none resize-none text-sm text-slate-800 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
                   placeholder="How was your service experience?"
                 />
               </div>
 
-              <div className="flex justify-end pt-4">
+              <div className="flex justify-end pt-4 border-t border-slate-100 mt-6">
                 <Button type="submit" disabled={feedbackMutation.isPending}>Submit Feedback</Button>
               </div>
             </form>
-          </GlassCard>
+          </div>
         </div>
       )}
     </div>

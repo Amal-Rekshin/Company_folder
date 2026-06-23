@@ -7,6 +7,8 @@ function mapQuotation(row) {
     totalAmount: row.total_amount ? parseFloat(row.total_amount) : null,
     gstRate: parseFloat(row.gst_rate),
     gstAmount: row.gst_amount ? parseFloat(row.gst_amount) : null,
+    customerName: row.customer_name,
+    customerPhone: row.customer_phone,
   };
 }
 
@@ -65,15 +67,15 @@ async function createQuotation(req, res, next) {
   try {
     const leadId = req.params.leadId;
     const adminId = req.user.id;
-    const { notes, terms, validUntil, gstRate, items } = req.body;
+    const { notes, terms, validUntil, gstRate, items, customerName, customerPhone } = req.body;
 
     const leadCheck = await query('SELECT id FROM leads WHERE id = $1', [leadId]);
     if (leadCheck.rows.length === 0) throw new AppError('Lead not found', 404);
 
     const quotResult = await query(
-      `INSERT INTO quotations (lead_id, created_by, notes, terms, valid_until, gst_rate, status, version)
-       VALUES ($1,$2,$3,$4,$5,$6,'draft',1) RETURNING *`,
-      [leadId, adminId, notes || null, terms || null, validUntil, gstRate || 18.0]
+      `INSERT INTO quotations (lead_id, created_by, notes, terms, valid_until, gst_rate, status, version, customer_name, customer_phone)
+       VALUES ($1,$2,$3,$4,$5,$6,'draft',1,$7,$8) RETURNING *`,
+      [leadId, adminId, notes || null, terms || null, validUntil, gstRate || 18.0, customerName || null, customerPhone || null]
     );
     const quotation = quotResult.rows[0];
 
@@ -132,10 +134,59 @@ async function sendQuotation(req, res, next) {
   }
 }
 
+// PUT /api/admin/quotations/:id
+async function updateQuotation(req, res, next) {
+  try {
+    const quotId = req.params.id;
+    const { notes, terms, validUntil, gstRate, items, customerName, customerPhone } = req.body;
+
+    const quotCheck = await query('SELECT status FROM quotations WHERE id = $1', [quotId]);
+    if (quotCheck.rows.length === 0) throw new AppError('Quotation not found', 404);
+    if (quotCheck.rows[0].status !== 'draft') {
+      throw new AppError('Only draft quotations can be modified', 400);
+    }
+
+    // Start a transaction
+    await query('BEGIN');
+
+    const updatedResult = await query(
+      `UPDATE quotations
+       SET notes = $1, terms = $2, valid_until = $3, gst_rate = $4, customer_name = $5, customer_phone = $6, updated_at = NOW()
+       WHERE id = $7 AND status = 'draft'
+       RETURNING *`,
+      [notes || null, terms || null, validUntil, gstRate || 18.0, customerName || null, customerPhone || null, quotId]
+    );
+    const quotation = updatedResult.rows[0];
+
+    // Delete existing items
+    await query('DELETE FROM quotation_items WHERE quotation_id = $1', [quotId]);
+
+    // Insert new items
+    for (const item of (items || [])) {
+      await query(
+        `INSERT INTO quotation_items (quotation_id, description, unit_price, quantity)
+         VALUES ($1,$2,$3,$4)`,
+        [quotId, item.description, item.unitPrice, item.quantity || 1]
+      );
+    }
+
+    await query('COMMIT');
+
+    const finalItems = await query(
+      'SELECT * FROM quotation_items WHERE quotation_id = $1', [quotId]
+    );
+    return res.json({ ...mapQuotation(quotation), items: finalItems.rows });
+  } catch (err) {
+    await query('ROLLBACK');
+    next(err);
+  }
+}
+
 module.exports = {
   getAllQuotations,
   getQuotationsByLead,
   getQuotation,
   createQuotation,
   sendQuotation,
+  updateQuotation,
 };

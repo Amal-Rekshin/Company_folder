@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '../../api/adminApi';
 import { GlassCard, Button, Input } from '../../components/ui/Components';
@@ -8,7 +9,9 @@ import { Loading } from '../../components/ui/Loading';
 
 const PartnerManagementPage = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
+  
   const [formData, setFormData] = useState({
     name: '', email: '', phone: '', password: '', companyName: '', commissionRate: ''
   });
@@ -58,7 +61,7 @@ const PartnerManagementPage = () => {
     { header: 'Commission (%)', accessor: 'commission_rate', cell: (row) => `${row.commission_rate}%` },
     { header: 'Status', cell: (row) => (
       <button 
-        onClick={() => toggleMutation.mutate(row.id)}
+        onClick={(e) => { e.stopPropagation(); toggleMutation.mutate(row.id); }}
         disabled={toggleMutation.isPending}
         className={`px-3 py-1 rounded-full text-xs font-semibold transition-all shadow-sm ${
           row.is_active 
@@ -93,21 +96,22 @@ const PartnerManagementPage = () => {
             <p className="text-slate-500 text-sm font-medium">No partners found. Add your first partner to get started.</p>
           </div>
         ) : (
-          <DataTable columns={columns} data={partners} />
+          <DataTable columns={columns} data={partners} onRowClick={(row) => navigate(`/admin/partners/${row.id}`)} />
         )}
       </GlassCard>
 
+      {/* Add Partner Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 overflow-y-auto">
-          <GlassCard className="w-full max-w-2xl relative my-8 shadow-2xl border border-white/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="w-full max-w-2xl bg-white border border-slate-200/80 shadow-2xl rounded-2xl p-6 relative my-8 text-slate-800">
             <button 
               onClick={() => setShowModal(false)}
-              className="absolute top-5 right-5 text-slate-400 hover:text-slate-700 transition-colors bg-slate-100/50 hover:bg-slate-100 p-1.5 rounded-full"
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
             >
-              <X className="w-5 h-5" />
+              <X className="w-6 h-6" />
             </button>
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold text-slate-800">Add New Partner</h2>
+            <div className="mb-6">
+              <h2 className="text-xl font-bold text-slate-900">Add New Partner</h2>
               <p className="text-sm text-slate-500 mt-1">Create a new partner agency account.</p>
             </div>
             
@@ -130,7 +134,7 @@ const PartnerManagementPage = () => {
                 </Button>
               </div>
             </form>
-          </GlassCard>
+          </div>
         </div>
       )}
     </div>

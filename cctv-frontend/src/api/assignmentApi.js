@@ -8,4 +8,6 @@ export const assignmentApi = {
   partnerAcceptJob: (id) => axiosInstance.patch(`/partner-assignments/${id}/accept`),
   partnerRejectJob: (id, reason) => axiosInstance.patch(`/partner-assignments/${id}/reject`, { reason }),
   partnerAssignTech: (id, data) => axiosInstance.post(`/partner-assignments/${id}/assign-technician`, data),
+  getPartnerAssignmentByTicket: (ticketId) => axiosInstance.get(`/partner-assignments/by-ticket/${ticketId}`),
+  getTechnicianAssignmentByTicket: (ticketId) => axiosInstance.get(`/technician-assignments/by-ticket/${ticketId}`),
 };

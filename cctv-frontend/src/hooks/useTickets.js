@@ -12,6 +12,10 @@ export const useTickets = (params = {}) => {
         const { data } = await ticketApi.getMyTickets();
         return data.content !== undefined ? data.content : data;
       }
+      if (user?.role === 'partner' || user?.role === 'technician') {
+        const { data } = await ticketApi.getMyAssignedTickets();
+        return Array.isArray(data) ? data : (data.content ?? []);
+      }
       const { data } = await ticketApi.getTickets(params);
       return data.content !== undefined ? data.content : data;
     },

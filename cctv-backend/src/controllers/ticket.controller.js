@@ -259,10 +259,67 @@ async function getStatusLog(req, res, next) {
   }
 }
 
+// GET /api/tickets/my-assigned  (partner or technician)
+async function getMyAssignedTickets(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const role = req.user.role;
+
+    let rows;
+
+    if (role === 'partner') {
+      const result = await query(
+        `SELECT DISTINCT ON (t.id)
+            t.*,
+            u.name AS customer_name,
+            pa.id AS assignment_id,
+            pa.status AS assignment_status
+         FROM partner_assignments pa
+         JOIN tickets t ON t.id = pa.ticket_id
+         JOIN users u ON u.id = t.customer_id
+         WHERE pa.partner_id = $1
+         ORDER BY t.id, pa.assigned_at DESC`,
+        [userId]
+      );
+      rows = result.rows.map(row => ({
+        ...mapTicket(row),
+        assignmentId: row.assignment_id,
+        assignmentStatus: row.assignment_status,
+      }));
+    } else if (role === 'technician') {
+      const result = await query(
+        `SELECT DISTINCT ON (t.id)
+            t.*,
+            u.name AS customer_name,
+            ta.id AS assignment_id,
+            ta.status AS assignment_status
+         FROM technician_assignments ta
+         JOIN tickets t ON t.id = ta.ticket_id
+         JOIN users u ON u.id = t.customer_id
+         WHERE ta.technician_id = $1
+         ORDER BY t.id, ta.assigned_at DESC`,
+        [userId]
+      );
+      rows = result.rows.map(row => ({
+        ...mapTicket(row),
+        assignmentId: row.assignment_id,
+        assignmentStatus: row.assignment_status,
+      }));
+    } else {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    return res.json(rows);
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   createTicket,
   getAllTickets,
   getMyTickets,
+  getMyAssignedTickets,
   getTicketById,
   updateStatus,
   closeTicket,

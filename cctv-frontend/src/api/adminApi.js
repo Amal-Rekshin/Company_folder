@@ -2,6 +2,7 @@ import axiosInstance from './axiosInstance';
 
 export const adminApi = {
   getUsers: (role) => axiosInstance.get('/admin/users', { params: { role } }),
+  getCustomersWithAddresses: () => axiosInstance.get('/admin/customers/addresses'),
   toggleUserActive: (id) => axiosInstance.patch(`/admin/users/${id}/toggle`),
   addTechnician: (data) => axiosInstance.post('/admin/technicians', data),
   getTechnician: (id) => axiosInstance.get(`/admin/technicians/${id}`),
@@ -11,6 +12,8 @@ export const adminApi = {
   getAvailableTechnicians: () => axiosInstance.get('/admin/technicians/available'),
   addPartner: (data) => axiosInstance.post('/admin/partners', data),
   getPartners: () => axiosInstance.get('/admin/partners'),
+  getPartner: (id) => axiosInstance.get(`/admin/partners/${id}`),
+  updatePartner: (id, data) => axiosInstance.put(`/admin/partners/${id}`, data),
 
   // Queries
   getQueries: () => axiosInstance.get('/admin/queries'),
@@ -21,13 +24,16 @@ export const adminApi = {
   // Leads
   getLeads: () => axiosInstance.get('/admin/leads'),
   getLead: (id) => axiosInstance.get(`/admin/leads/${id}`),
+  createLead: (data) => axiosInstance.post('/admin/leads', data),
   assignLead: (id, assignedTo) => axiosInstance.patch(`/admin/leads/${id}/assign`, { assignedTo }),
   addLeadNote: (id, note) => axiosInstance.post(`/admin/leads/${id}/notes`, { note }),
 
   // Quotations
   getQuotationsByLead: (leadId) => axiosInstance.get(`/admin/quotations/lead/${leadId}`),
   getAllQuotations: () => axiosInstance.get('/admin/quotations'),
+  getQuotation: (id) => axiosInstance.get(`/admin/quotations/${id}`),
   createQuotation: (leadId, data) => axiosInstance.post(`/admin/quotations/lead/${leadId}`, data),
+  updateQuotation: (id, data) => axiosInstance.put(`/admin/quotations/${id}`, data),
   sendQuotation: (id) => axiosInstance.post(`/admin/quotations/${id}/send`),
 
   // Reports
