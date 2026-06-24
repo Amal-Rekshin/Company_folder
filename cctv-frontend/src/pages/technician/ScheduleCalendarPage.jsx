@@ -32,9 +32,9 @@ function getCalendarDays(year, month) {
 }
 
 function toDateKey(dateStr) {
-  // Normalize "YYYY-MM-DD" from DB date
   if (!dateStr) return '';
-  return dateStr.split('T')[0];
+  const d = new Date(dateStr);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 const ScheduleCalendarPage = () => {
@@ -83,9 +83,12 @@ const ScheduleCalendarPage = () => {
   const selectedKey = selectedDay ? getDateKey(selectedDay) : null;
   const selectedSchedules = selectedKey ? (scheduleMap[selectedKey] || []) : [];
 
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
   // Upcoming jobs (sorted)
   const allUpcoming = (schedules || [])
-    .filter(s => new Date(s.scheduled_date) >= today)
+    .filter(s => new Date(s.scheduled_date) >= todayStart)
     .sort((a, b) => new Date(a.scheduled_date) - new Date(b.scheduled_date))
     .slice(0, 5);
 
@@ -190,7 +193,7 @@ const ScheduleCalendarPage = () => {
                 {MONTHS[currentMonth]} {selectedDay}, {currentYear}
               </h3>
               {selectedSchedules.length === 0 ? (
-                <p className="text-slate-400 text-sm text-center py-4">No visits scheduled on this day.</p>
+                <p className="text-slate-400 text-sm text-center py-4">Nothing assigned</p>
               ) : (
                 <div className="space-y-3">
                   {selectedSchedules.map((s, i) => (

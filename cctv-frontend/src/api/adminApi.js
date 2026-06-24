@@ -44,5 +44,8 @@ export const adminApi = {
   // Settlements
   getPendingSettlements: () => axiosInstance.get('/admin/settlements/pending'),
   getSettlementBatches: () => axiosInstance.get('/admin/settlements/batches'),
-  createSettlementBatch: (data) => axiosInstance.post('/settlements/batch', data)
+  createSettlementBatch: (data) => axiosInstance.post('/settlements/batch', data),
+
+  // Material Requests
+  updateMaterialRequestStatus: (id, status) => axiosInstance.patch(`/admin/material-requests/${id}/status`, { status })
 };

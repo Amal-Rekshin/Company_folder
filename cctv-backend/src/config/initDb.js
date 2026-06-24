@@ -157,6 +157,28 @@ async function initializeDatabase() {
           console.log('✅ Technician portal schema updates applied.');
         }
 
+        // Migration: create material_requests
+        const checkMaterialRequests = await client.query(`
+          SELECT EXISTS (
+            SELECT FROM information_schema.tables
+            WHERE table_schema = 'public' AND table_name = 'material_requests'
+          );
+        `);
+        if (!checkMaterialRequests.rows[0].exists) {
+          console.log('⚠️ Creating material_requests table...');
+          await client.query(`
+            CREATE TABLE IF NOT EXISTS material_requests (
+              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+              ticket_id UUID REFERENCES tickets(id) ON DELETE CASCADE,
+              technician_id UUID REFERENCES users(id) ON DELETE CASCADE,
+              request_text TEXT,
+              status VARCHAR(50) DEFAULT 'pending',
+              created_at TIMESTAMP DEFAULT NOW(),
+              updated_at TIMESTAMP DEFAULT NOW()
+            );
+          `);
+        }
+
         console.log('✅ Database schema already exists. Skipping initialization.');
         return;
       }
@@ -365,6 +387,16 @@ async function initializeDatabase() {
         batch_id UUID REFERENCES settlement_batches(id) ON DELETE CASCADE,
         amount DECIMAL(10,2),
         created_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS material_requests (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        ticket_id UUID REFERENCES tickets(id) ON DELETE CASCADE,
+        technician_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        request_text TEXT,
+        status VARCHAR(50) DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
       );
     `);
 

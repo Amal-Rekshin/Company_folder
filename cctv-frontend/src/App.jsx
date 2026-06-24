@@ -13,6 +13,7 @@ import MyTicketsPage from './pages/customer/MyTicketsPage';
 import CreateTicketPage from './pages/customer/CreateTicketPage';
 import TicketDetailPage from './pages/customer/TicketDetailPage';
 import PaymentPage from './pages/customer/PaymentPage';
+import CustomerProfilePage from './pages/customer/CustomerProfilePage';
 
 // Admin Pages
 import AllTicketsPage from './pages/admin/AllTicketsPage';
@@ -66,6 +67,7 @@ const App = () => {
                 <Route path="/customer/tickets/new" element={<CreateTicketPage />} />
                 <Route path="/customer/tickets/:id" element={<TicketDetailPage />} />
                 <Route path="/customer/invoices" element={<PaymentPage />} />
+                <Route path="/customer/profile" element={<CustomerProfilePage />} />
               </Route>
             </Route>
             

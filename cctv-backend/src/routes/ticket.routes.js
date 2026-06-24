@@ -13,4 +13,9 @@ router.patch('/:id/close', verifyToken, requireRole('customer'), ctrl.closeTicke
 router.post('/:id/reopen', verifyToken, requireRole('customer'), ctrl.reopenTicket);
 router.get('/:id/status-log', verifyToken, ctrl.getStatusLog);
 
+// Material Requests
+const mrCtrl = require('../controllers/materialRequest.controller');
+router.post('/:id/material-requests', verifyToken, requireRole('technician'), mrCtrl.createMaterialRequest);
+router.get('/:id/material-requests', verifyToken, mrCtrl.getMaterialRequestsForTicket);
+
 module.exports = router;

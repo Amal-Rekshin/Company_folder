@@ -6,6 +6,7 @@ const errorHandler = require('./middleware/errorHandler');
 
 // Routes
 const authRoutes = require('./routes/auth.routes');
+const userRoutes = require('./routes/user.routes');
 const ticketRoutes = require('./routes/ticket.routes');
 const assignmentRoutes = require('./routes/assignment.routes');
 const estimateRoutes = require('./routes/estimate.routes');
@@ -41,6 +42,7 @@ app.get('/health', (req, res) => res.json({ status: 'ok', service: 'cctv-platfor
 
 // ─── API Routes ────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api', assignmentRoutes);
 app.use('/api', estimateRoutes);

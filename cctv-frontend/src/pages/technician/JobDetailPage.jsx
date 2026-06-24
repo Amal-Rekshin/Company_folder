@@ -9,7 +9,7 @@ import {
 import { ticketApi } from '../../api/ticketApi';
 import { assignmentApi } from '../../api/assignmentApi';
 import { scheduleApi } from '../../api/scheduleApi';
-import { estimateApi } from '../../api/estimateApi';
+import { publicApi } from '../../api/publicApi';
 import { GlassCard, Badge, Button } from '../../components/ui/Components';
 import { LoadingPage } from '../../components/ui/Loading';
 
@@ -41,9 +41,8 @@ const JobDetailPage = () => {
   const [scheduleForm, setScheduleForm] = useState({ scheduledDate: '', scheduledTime: '' });
   const [showScheduleForm, setShowScheduleForm] = useState(false);
 
-  const [estimateItems, setEstimateItems] = useState([{ description: '', unitPrice: '', quantity: 1 }]);
-  const [estimateNotes, setEstimateNotes] = useState('');
-  const [showEstimateForm, setShowEstimateForm] = useState(false);
+  const [materialRequestText, setMaterialRequestText] = useState('');
+  const [showMaterialRequestForm, setShowMaterialRequestForm] = useState(false);
 
   const { data: ticket, isLoading: ticketLoading } = useQuery({
     queryKey: ['ticket', id],
@@ -56,10 +55,15 @@ const JobDetailPage = () => {
     retry: false,
   });
 
-  const { data: estimate } = useQuery({
-    queryKey: ['estimate', id],
-    queryFn: () => estimateApi.getLatestEstimate(id).then(r => r.data),
-    retry: false,
+  const { data: quotation } = useQuery({
+    queryKey: ['quotation', ticket?.quotationAcceptToken],
+    queryFn: () => publicApi.getQuotation(ticket.quotationAcceptToken).then(r => r.data),
+    enabled: !!ticket?.quotationAcceptToken,
+  });
+
+  const { data: materialRequests } = useQuery({
+    queryKey: ['materialRequests', id],
+    queryFn: () => ticketApi.getMaterialRequests(id).then(r => r.data),
   });
 
   const acceptMutation = useMutation({
@@ -87,23 +91,12 @@ const JobDetailPage = () => {
     },
   });
 
-  const createEstimateMutation = useMutation({
-    mutationFn: () => estimateApi.createEstimate(id, {
-      notes: estimateNotes,
-      items: estimateItems.filter(i => i.description.trim()).map(i => ({
-        description: i.description,
-        unitPrice: parseFloat(i.unitPrice) || 0,
-        quantity: parseInt(i.quantity) || 1,
-      })),
-    }),
-    onSuccess: () => queryClient.invalidateQueries(['estimate', id]),
-  });
-
-  const submitEstimateMutation = useMutation({
-    mutationFn: () => estimateApi.submitEstimate(estimate.id),
+  const createMaterialRequestMutation = useMutation({
+    mutationFn: () => ticketApi.createMaterialRequest(id, { requestText: materialRequestText }),
     onSuccess: () => {
-      queryClient.invalidateQueries(['estimate', id]);
-      queryClient.invalidateQueries(['ticket', id]);
+      queryClient.invalidateQueries(['materialRequests', id]);
+      setMaterialRequestText('');
+      setShowMaterialRequestForm(false);
     },
   });
 
@@ -120,18 +113,6 @@ const JobDetailPage = () => {
 
   const canAcceptReject = assignment && assignment.status === 'pending';
   const canSchedule = assignment?.status === 'accepted' && ticket.status === 'accepted';
-  const canCreateEstimate = ['accepted', 'visit_scheduled'].includes(ticket.status) && !estimate;
-  const canSubmitEstimate = estimate && estimate.status === 'draft';
-
-  const addItem = () => setEstimateItems(prev => [...prev, { description: '', unitPrice: '', quantity: 1 }]);
-  const removeItem = (idx) => setEstimateItems(prev => prev.filter((_, i) => i !== idx));
-  const updateItem = (idx, field, val) => setEstimateItems(prev =>
-    prev.map((item, i) => i === idx ? { ...item, [field]: val } : item)
-  );
-
-  const estimateTotal = estimateItems.reduce((sum, item) => {
-    return sum + (parseFloat(item.unitPrice) || 0) * (parseInt(item.quantity) || 1);
-  }, 0);
 
   return (
     <div className="space-y-6 pb-8">
@@ -291,21 +272,19 @@ const JobDetailPage = () => {
             )}
           </GlassCard>
 
-          {/* Estimate Section */}
+          {/* Quotation Section */}
           <GlassCard>
-            <SectionTitle icon={DollarSign} title="Cost Estimate" />
+            <SectionTitle icon={DollarSign} title="Approved Quotation" />
 
-            {estimate ? (
+            {quotation ? (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <Badge color={estimate.status === 'approved' ? 'green' : estimate.status === 'rejected' ? 'red' : estimate.status === 'submitted' ? 'yellow' : 'slate'}>
-                    {statusLabel(estimate.status)}
-                  </Badge>
-                  <span className="text-sm text-slate-500">v{estimate.version}</span>
+                  <Badge color="green">Approved</Badge>
+                  <span className="text-sm text-slate-500">v{quotation.version}</span>
                 </div>
 
-                {estimate.notes && (
-                  <p className="text-sm text-slate-600 bg-slate-50 p-3 rounded-xl">{estimate.notes}</p>
+                {quotation.notes && (
+                  <p className="text-sm text-slate-600 bg-slate-50 p-3 rounded-xl">{quotation.notes}</p>
                 )}
 
                 <div className="border border-slate-100 rounded-xl overflow-hidden">
@@ -319,12 +298,12 @@ const JobDetailPage = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {estimate.items?.map((item, i) => (
+                      {quotation.items?.map((item, i) => (
                         <tr key={i} className="border-t border-slate-100">
                           <td className="py-3 px-4 text-slate-700">{item.description}</td>
                           <td className="py-3 px-4 text-right text-slate-600">{item.quantity}</td>
-                          <td className="py-3 px-4 text-right text-slate-600">₹{item.unitPrice.toFixed(2)}</td>
-                          <td className="py-3 px-4 text-right font-medium text-slate-800">₹{item.lineTotal.toFixed(2)}</td>
+                          <td className="py-3 px-4 text-right text-slate-600">₹{parseFloat(item.unit_price).toFixed(2)}</td>
+                          <td className="py-3 px-4 text-right font-medium text-slate-800">₹{(parseFloat(item.unit_price) * item.quantity).toFixed(2)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -332,103 +311,63 @@ const JobDetailPage = () => {
                       <tr>
                         <td colSpan={3} className="py-3 px-4 font-semibold text-slate-800">Grand Total</td>
                         <td className="py-3 px-4 text-right font-bold text-primary-600 text-base">
-                          ₹{(estimate.approvedTotal ?? estimate.currentTotal ?? 0).toFixed(2)}
+                          ₹{parseFloat(quotation.total_amount).toFixed(2)}
                         </td>
                       </tr>
                     </tfoot>
                   </table>
                 </div>
-
-                {canSubmitEstimate && (
-                  <Button
-                    onClick={() => submitEstimateMutation.mutate()}
-                    disabled={submitEstimateMutation.isPending}
-                    className="flex items-center gap-2"
-                  >
-                    <Send className="w-4 h-4" /> Submit for Customer Approval
-                  </Button>
-                )}
-
-                {estimate.status === 'rejected' && (
-                  <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-sm text-rose-700">
-                    <strong>Rejection reason:</strong> {estimate.rejectionReason || 'No reason provided'}
-                  </div>
-                )}
               </div>
-            ) : canCreateEstimate ? (
-              !showEstimateForm ? (
+            ) : (
+              <p className="text-slate-400 text-sm">No quotation associated with this job.</p>
+            )}
+            
+            {/* Material Requests */}
+            <div className="mt-8 pt-6 border-t border-slate-100">
+              <h3 className="text-sm font-semibold text-slate-800 mb-4">Additional Material Requests</h3>
+              
+              {materialRequests?.length > 0 && (
+                <div className="space-y-3 mb-4">
+                  {materialRequests.map(req => (
+                    <div key={req.id} className="p-3 border border-slate-100 rounded-xl bg-slate-50">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-xs text-slate-500">{new Date(req.created_at).toLocaleString()}</span>
+                        <Badge color={req.status === 'approved' ? 'green' : req.status === 'rejected' ? 'red' : 'yellow'}>
+                          {req.status}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-slate-700">{req.request_text}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {!showMaterialRequestForm ? (
                 <button
-                  onClick={() => setShowEstimateForm(true)}
+                  onClick={() => setShowMaterialRequestForm(true)}
                   className="flex items-center gap-2 text-primary-600 font-medium text-sm hover:text-primary-700 transition-colors"
                 >
-                  <Plus className="w-4 h-4" /> Create Cost Estimate
+                  <Plus className="w-4 h-4" /> Request Additional Items
                 </button>
               ) : (
-                <form onSubmit={e => { e.preventDefault(); createEstimateMutation.mutate(); }} className="space-y-5">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1">Notes (optional)</label>
-                    <textarea
-                      rows={2}
-                      value={estimateNotes}
-                      onChange={e => setEstimateNotes(e.target.value)}
-                      className="w-full p-3 border border-slate-200 rounded-xl text-sm resize-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
-                      placeholder="Any notes for the customer..."
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide">Line Items</label>
-                    {estimateItems.map((item, idx) => (
-                      <div key={idx} className="flex gap-2 items-start">
-                        <input
-                          placeholder="Description"
-                          value={item.description}
-                          onChange={e => updateItem(idx, 'description', e.target.value)}
-                          className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
-                        />
-                        <input
-                          type="number"
-                          placeholder="Price"
-                          value={item.unitPrice}
-                          onChange={e => updateItem(idx, 'unitPrice', e.target.value)}
-                          className="w-24 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
-                        />
-                        <input
-                          type="number"
-                          placeholder="Qty"
-                          value={item.quantity}
-                          min={1}
-                          onChange={e => updateItem(idx, 'quantity', e.target.value)}
-                          className="w-16 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
-                        />
-                        {estimateItems.length > 1 && (
-                          <button type="button" onClick={() => removeItem(idx)} className="p-2 text-rose-400 hover:text-rose-600 transition-colors">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                    <button type="button" onClick={addItem} className="text-sm text-primary-600 flex items-center gap-1 hover:text-primary-700">
-                      <Plus className="w-3 h-3" /> Add Item
-                    </button>
-                  </div>
-
-                  <div className="flex justify-between items-center pt-2 border-t border-slate-100">
-                    <span className="font-semibold text-slate-700">Estimated Total</span>
-                    <span className="font-bold text-primary-600 text-lg">₹{estimateTotal.toFixed(2)}</span>
-                  </div>
-
+                <form onSubmit={e => { e.preventDefault(); createMaterialRequestMutation.mutate(); }} className="space-y-3">
+                  <textarea
+                    rows={2}
+                    required
+                    value={materialRequestText}
+                    onChange={e => setMaterialRequestText(e.target.value)}
+                    className="w-full p-3 border border-slate-200 rounded-xl text-sm resize-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none"
+                    placeholder="Describe what additional items you need..."
+                  />
                   <div className="flex gap-2">
-                    <Button type="submit" disabled={createEstimateMutation.isPending} className="flex items-center gap-2">
-                      <DollarSign className="w-4 h-4" /> Save Estimate
+                    <Button type="submit" disabled={createMaterialRequestMutation.isPending} className="flex items-center gap-2" size="sm">
+                      <Send className="w-4 h-4" /> Submit Request
                     </Button>
-                    <Button variant="secondary" type="button" onClick={() => setShowEstimateForm(false)}>Cancel</Button>
+                    <Button variant="secondary" size="sm" type="button" onClick={() => setShowMaterialRequestForm(false)}>Cancel</Button>
                   </div>
                 </form>
-              )
-            ) : (
-              <p className="text-slate-400 text-sm">Schedule the site visit first to create an estimate.</p>
-            )}
+              )}
+            </div>
           </GlassCard>
         </div>
 

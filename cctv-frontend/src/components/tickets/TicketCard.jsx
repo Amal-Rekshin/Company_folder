@@ -23,7 +23,9 @@ export const TicketCard = ({ ticket, onClick }) => {
           <span className="text-sm font-medium text-slate-500 capitalize">{ticket.serviceType.replace('_', ' ')}</span>
         </div>
         <Badge color={getStatusColor(ticket.status)}>
-          {ticket.status.replace(/_/g, ' ')}
+          {['technician_assigned', 'partner_assigned', 'partner_accepted'].includes(ticket.status) 
+            ? 'Assigned' 
+            : ticket.status.replace(/_/g, ' ')}
         </Badge>
       </div>
 

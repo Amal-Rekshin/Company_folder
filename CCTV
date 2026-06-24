@@ -1,0 +1,142 @@
+# Amal-Rekshin CCTV Service Management Platform
+
+A comprehensive service request and operations management platform designed for CCTV installation, repair, and AMC services. The platform connects Administrators, Partners, Technicians, and Customers through a unified workflow.
+
+## 🌟 Overview
+
+The platform streamlines the entire lifecycle of CCTV service requests—from lead generation and quotation to ticket assignment, field service execution, and final settlement. It features role-based access control, real-time status tracking, and a sleek, modern UI built with React and Tailwind CSS.
+
+---
+
+## 🏗️ Tech Stack
+
+### Frontend (`cctv-frontend`)
+- **Framework:** React + Vite
+- **Styling:** Tailwind CSS (with Glassmorphism design system)
+- **State Management:** React Query (`@tanstack/react-query`)
+- **Routing:** React Router DOM
+- **Icons:** Lucide React
+
+### Backend (`cctv-backend`)
+- **Environment:** Node.js
+- **Framework:** Express.js
+- **Database:** PostgreSQL (with `pg` module)
+- **Authentication:** JSON Web Tokens (JWT) & bcrypt for password hashing
+- **File Uploads:** Multer (for service reports and evidence)
+- **Security:** Helmet, CORS
+
+---
+
+## 🔑 User Roles & Workflows
+
+### 1. Admin (Superuser)
+Admins have full visibility and control over the platform operations.
+- **Leads & Quotations:** Track incoming public queries, convert them to leads, and generate formal quotations.
+- **Ticket Management (`/admin/tickets`):** Create tickets, filter by status/priority/service, and assign them to internal Technicians or external Partners.
+- **Partner Management (`/admin/partners`):** Onboard partner companies, view partner performance, and track settlements.
+- **Technician Management (`/admin/users`):** Manage internal technicians and track their active/completed jobs.
+- **Financials:** Manage settlements, review completed jobs, and track partner payouts.
+
+### 2. Partner (External Agency)
+Partners are external agencies that receive bulk assignments or specific jobs from the Admin.
+- **Incoming Tickets (`/partner/tickets`):** View tickets assigned by the Admin.
+- **Ticket Actions:** Accept or Reject assigned tickets.
+- **Technician Assignment:** Once accepted, Partners can assign their own technicians to the job by providing the technician's name.
+- **Job Tracking:** Track the progress of assigned jobs through a simplified visual timeline (Assigned → Accepted → Completed).
+
+### 3. Technician (Field Worker)
+Technicians handle the actual on-site installation or repair.
+- **Job Queue:** View assigned tasks, customer details, and service addresses.
+- **Status Updates:** Update ticket status (e.g., *On Site*, *Work in Progress*).
+- **Service Reports (`/technician/report`):** Submit digital service reports upon job completion, including issue descriptions, resolutions, parts used, and photo evidence.
+
+### 4. Customer (End User)
+- **Public Queries:** Submit service requests or complaints via the public landing page.
+- **Ticket Tracking:** Track the real-time status of their service request.
+
+---
+
+## 🛠️ Key Modules & Functions
+
+### Ticket & Assignment Engine
+The core of the system is the robust ticketing engine.
+- **Status Machine:** Tickets flow through states: `new` → `partner_assigned` / `technician_assigned` → `accepted` → `on_site` → `work_in_progress` → `completed` → `closed`.
+- **Assignment Logic:** 
+  - Admins can assign to either an internal Technician or an external Partner.
+  - Partners must explicitly *Accept* a ticket before assigning it to their field staff.
+  - Rejected tickets loop back to the Admin's queue for reassignment.
+
+### Multi-tier Timelines
+The UI dynamically renders progress timelines based on the viewer's role:
+- **Admin View:** Sees granular tracking (Admin → Partner → Partner's Technician → Completion).
+- **Partner View:** Sees a simplified 3-step pipeline (Assigned to You → Accepted → Completed) to reduce noise.
+- **Rejected Flow:** Visual red timeline flags returned assignments.
+
+### Filter & Search System
+Client-side and server-side filtering combination.
+- **Smart Filtering:** Live-updating status chips with count badges.
+- **Compound Search:** Search by Ticket ID, City, Priority, or Service Type simultaneously.
+
+### Lead & Quotation System
+- **Lead Generation:** Public form submissions automatically create backend leads.
+- **Quotation Builder:** Admins can generate PDF/digital quotations for leads, specifying equipment costs, service charges, and terms.
+
+---
+
+## 🚀 How to Run Locally
+
+### Prerequisites
+- Node.js (v18+)
+- PostgreSQL installed and running
+
+### 1. Database Setup
+Ensure PostgreSQL is running. The backend contains an initialization script that creates all necessary tables (`users`, `tickets`, `partner_assignments`, `ticket_status_log`, etc.).
+```bash
+cd cctv-backend
+# Set your DB credentials in .env
+npm run init-db  # If applicable, or let the server auto-init
+```
+
+### 2. Start the Backend
+```bash
+cd cctv-backend
+npm install
+npm run dev
+# Server starts on http://localhost:8080
+```
+
+### 3. Start the Frontend
+```bash
+cd cctv-frontend
+npm install
+npm run dev
+# Client starts on http://localhost:5173
+```
+
+---
+
+## 📁 Project Structure
+
+```text
+n/CCTV/
+├── cctv-backend/
+│   ├── src/
+│   │   ├── controllers/      # Business logic (ticket.controller, assignment.controller, etc.)
+│   │   ├── middleware/       # Auth (verifyToken, requireRole), Error handling
+│   │   ├── routes/           # API Endpoints
+│   │   └── config/           # Database connection and init scripts
+│   └── .env                  # Environment variables
+│
+└── cctv-frontend/
+    ├── src/
+    │   ├── api/              # Axios API clients for backend communication
+    │   ├── components/       # Reusable UI elements (GlassCard, DataTables, TicketTimeline)
+    │   ├── hooks/            # React Query custom hooks (useTickets, etc.)
+    │   └── pages/            # Role-based route views
+    │       ├── admin/        # Admin dashboard, tickets, leads, partners
+    │       ├── partner/      # Partner dashboard, incoming assignments
+    │       ├── technician/   # Tech task lists, service reports
+    │       ├── auth/         # Login flows
+    │       └── public/       # Landing pages and query forms
+    └── vite.config.js
+```

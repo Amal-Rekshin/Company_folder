@@ -8,7 +8,8 @@ import { ticketApi } from '../../api/ticketApi';
 import { estimateApi } from '../../api/estimateApi';
 import { feedbackApi } from '../../api/feedbackApi';
 import { publicApi } from '../../api/publicApi';
-import { X, Star, FileText, ChevronRight, CheckCircle2, ArrowLeft, MapPin, AlignLeft, Activity } from 'lucide-react';
+import { adminApi } from '../../api/adminApi';
+import { X, Star, FileText, ChevronRight, CheckCircle2, ArrowLeft, MapPin, AlignLeft, Activity, Plus } from 'lucide-react';
 
 import { LoadingPage } from '../../components/ui/Loading';
 
@@ -33,6 +34,20 @@ const TicketDetailPage = () => {
     queryKey: ['publicQuotation', ticket?.quotationAcceptToken],
     queryFn: () => publicApi.getQuotation(ticket.quotationAcceptToken).then(res => res.data),
     enabled: !!ticket?.quotationAcceptToken
+  });
+
+  const isAdmin = window.location.pathname.includes('/admin/');
+  const { data: materialRequests } = useQuery({
+    queryKey: ['materialRequests', id],
+    queryFn: () => ticketApi.getMaterialRequests(id).then(res => res.data),
+    enabled: isAdmin
+  });
+
+  const updateMaterialRequestMutation = useMutation({
+    mutationFn: ({ reqId, status }) => adminApi.updateMaterialRequestStatus(reqId, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['materialRequests', id]);
+    }
   });
 
   const approveEstimateMutation = useMutation({
@@ -69,7 +84,11 @@ const TicketDetailPage = () => {
           </button>
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-black text-slate-900 tracking-tight">{ticket.ticketNumber}</h1>
-            <Badge color="blue">{ticket.status.replace(/_/g, ' ').toUpperCase()}</Badge>
+            <Badge color="blue">
+              {['technician_assigned', 'partner_assigned', 'partner_accepted'].includes(ticket.status) 
+                ? 'ASSIGNED' 
+                : ticket.status.replace(/_/g, ' ').toUpperCase()}
+            </Badge>
           </div>
           <p className="text-slate-500 mt-2 font-medium tracking-wide text-sm">
             <span className="uppercase">{ticket.serviceType.replace('_', ' ')}</span> <span className="mx-2 text-slate-300">|</span> {new Date(ticket.createdAt).toLocaleString()}
@@ -127,6 +146,35 @@ const TicketDetailPage = () => {
       <div className="bg-white border border-slate-200 rounded-sm shadow-sm p-6 sm:p-8">
         <TicketTimeline currentStatus={ticket.status} />
       </div>
+
+      {isAdmin && materialRequests?.length > 0 && (
+        <div className="bg-white border border-slate-200 rounded-sm shadow-sm p-6 sm:p-8">
+          <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-3">
+            <Plus className="w-4 h-4 text-slate-400" />
+            <h3 className="font-bold text-slate-800 uppercase tracking-widest text-xs">Material Requests</h3>
+          </div>
+          <div className="space-y-4">
+            {materialRequests.map(req => (
+              <div key={req.id} className="p-4 border border-slate-100 rounded-xl bg-slate-50 flex flex-col sm:flex-row gap-4 justify-between items-start">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs text-slate-500 font-semibold">{req.technician_name}</span>
+                    <span className="text-xs text-slate-400">{new Date(req.created_at).toLocaleString()}</span>
+                    <Badge color={req.status === 'approved' ? 'green' : req.status === 'rejected' ? 'red' : 'yellow'}>{req.status}</Badge>
+                  </div>
+                  <p className="text-sm text-slate-700">{req.request_text}</p>
+                </div>
+                {req.status === 'pending' && (
+                  <div className="flex gap-2 shrink-0">
+                    <Button size="sm" onClick={() => updateMaterialRequestMutation.mutate({ reqId: req.id, status: 'approved' })} disabled={updateMaterialRequestMutation.isPending} className="bg-emerald-600 hover:bg-emerald-700 text-white">Approve</Button>
+                    <Button size="sm" variant="danger" onClick={() => updateMaterialRequestMutation.mutate({ reqId: req.id, status: 'rejected' })} disabled={updateMaterialRequestMutation.isPending}>Reject</Button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white border border-slate-200 rounded-sm shadow-sm p-6 sm:p-8 flex flex-col">

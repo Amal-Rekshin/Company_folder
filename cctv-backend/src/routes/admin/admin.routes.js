@@ -24,4 +24,7 @@ router.get('/reports/technician-performance', ...admin, ctrl.getTechnicianPerfor
 router.get('/reports/partner-performance', ...admin, ctrl.getPartnerPerformance);
 router.get('/reports/ticket-aging', ...admin, ctrl.getTicketAging);
 
+const mrCtrl = require('../../controllers/materialRequest.controller');
+router.patch('/material-requests/:id/status', ...admin, mrCtrl.updateMaterialRequestStatus);
+
 module.exports = router;

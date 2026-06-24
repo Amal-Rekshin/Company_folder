@@ -11,4 +11,8 @@ export const ticketApi = {
   getTicketStatusLog: (id) => axiosInstance.get(`/tickets/${id}/status-log`),
   closeTicket: (id) => axiosInstance.patch(`/tickets/${id}/close`),
   reopenTicket: (id) => axiosInstance.post(`/tickets/${id}/reopen`),
+  
+  // Material Requests
+  createMaterialRequest: (ticketId, data) => axiosInstance.post(`/tickets/${ticketId}/material-requests`, data),
+  getMaterialRequests: (ticketId) => axiosInstance.get(`/tickets/${ticketId}/material-requests`),
 };

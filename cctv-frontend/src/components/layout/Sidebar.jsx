@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Ticket, Users, Briefcase, FileText, CreditCard, Settings, LogOut, MessageSquare, Target, FileSignature } from 'lucide-react';
+import { LayoutDashboard, Ticket, Users, User, Briefcase, FileText, CreditCard, Settings, LogOut, MessageSquare, Target, FileSignature } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = ({ isOpen }) => {
@@ -53,6 +53,7 @@ const Sidebar = ({ isOpen }) => {
           { name: 'Dashboard', icon: LayoutDashboard, path: '/customer' },
           { name: 'My Tickets', icon: Ticket, path: '/customer/tickets' },
           { name: 'Invoices', icon: FileText, path: '/customer/invoices' },
+          { name: 'My Profile', icon: User, path: '/customer/profile' },
         ];
     }
   };
