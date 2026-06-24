@@ -24,6 +24,7 @@ import SettlementPage from './pages/admin/SettlementPage';
 
 // Technician Pages
 import MyJobsPage from './pages/technician/MyJobsPage';
+import JobDetailPage from './pages/technician/JobDetailPage';
 import ScheduleCalendarPage from './pages/technician/ScheduleCalendarPage';
 
 // Partner Pages
@@ -93,6 +94,7 @@ const App = () => {
             <Route element={<ProtectedRoute allowedRoles={['technician']} />}>
               <Route element={<AppLayout />}>
                 <Route path="/technician" element={<MyJobsPage />} />
+                <Route path="/technician/jobs/:id" element={<JobDetailPage />} />
                 <Route path="/technician/jobs/:id/report" element={<ServiceReportPage />} />
                 <Route path="/technician/schedule" element={<ScheduleCalendarPage />} />
               </Route>

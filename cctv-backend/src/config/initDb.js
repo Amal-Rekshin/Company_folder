@@ -78,6 +78,85 @@ async function initializeDatabase() {
           console.log('✅ ticket_status_log table created.');
         }
 
+        // Migration: add customer_id to queries
+        const checkQueriesCustomerCol = await client.query(`
+          SELECT EXISTS (
+            SELECT FROM information_schema.columns
+            WHERE table_name = 'queries' AND column_name = 'customer_id'
+          );
+        `);
+        if (!checkQueriesCustomerCol.rows[0].exists) {
+          console.log('⚠️ Adding customer_id to queries table...');
+          await client.query('ALTER TABLE queries ADD COLUMN customer_id UUID REFERENCES users(id) ON DELETE SET NULL;');
+        }
+
+        // Migration: create missing tables and columns for technician portal
+        const checkEstimatesVersionCol = await client.query(`
+          SELECT EXISTS (
+            SELECT FROM information_schema.columns
+            WHERE table_name = 'estimates' AND column_name = 'version'
+          );
+        `);
+        if (!checkEstimatesVersionCol.rows[0].exists) {
+          console.log('⚠️ Updating estimates table schema and adding new tables...');
+          // Add missing columns to estimates
+          await client.query('ALTER TABLE estimates ADD COLUMN version INT DEFAULT 1;');
+          await client.query('ALTER TABLE estimates ADD COLUMN notes TEXT;');
+          await client.query('ALTER TABLE estimates ADD COLUMN valid_until DATE;');
+          await client.query('ALTER TABLE estimates ADD COLUMN approved_total DECIMAL(10,2);');
+          await client.query('ALTER TABLE estimates ADD COLUMN submitted_at TIMESTAMP;');
+          await client.query('ALTER TABLE estimates ADD COLUMN responded_at TIMESTAMP;');
+          await client.query('ALTER TABLE estimates ADD COLUMN rejection_reason TEXT;');
+          await client.query('ALTER TABLE estimates ADD COLUMN created_by UUID REFERENCES users(id) ON DELETE SET NULL;');
+          await client.query('ALTER TABLE estimates ADD COLUMN approved_by UUID REFERENCES users(id) ON DELETE SET NULL;');
+
+          // Create estimate_items
+          await client.query(`
+            CREATE TABLE IF NOT EXISTS estimate_items (
+              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+              estimate_id UUID REFERENCES estimates(id) ON DELETE CASCADE,
+              description TEXT,
+              unit_price DECIMAL(10,2),
+              quantity INT DEFAULT 1
+            );
+          `);
+
+          // Create service_schedules (or rename existing schedules)
+          const checkServiceSchedules = await client.query(`
+            SELECT EXISTS (
+              SELECT FROM information_schema.tables
+              WHERE table_schema = 'public' AND table_name = 'service_schedules'
+            );
+          `);
+          if (!checkServiceSchedules.rows[0].exists) {
+            await client.query('ALTER TABLE IF EXISTS schedules RENAME TO service_schedules;');
+            await client.query('ALTER TABLE service_schedules RENAME COLUMN time_slot TO scheduled_time;');
+            await client.query('ALTER TABLE service_schedules ADD COLUMN reschedule_reason TEXT;');
+          }
+
+          // Service reports updates
+          await client.query('ALTER TABLE service_reports ADD COLUMN inspection_notes TEXT;');
+          await client.query('ALTER TABLE service_reports ADD COLUMN work_done TEXT;');
+          await client.query('ALTER TABLE service_reports ADD COLUMN recommendations TEXT;');
+          await client.query('ALTER TABLE service_reports ADD COLUMN materials_used TEXT;');
+          await client.query('ALTER TABLE service_reports ADD COLUMN parts_replaced TEXT;');
+          await client.query('ALTER TABLE service_reports ADD COLUMN customer_signature_url TEXT;');
+          await client.query('ALTER TABLE service_reports ADD COLUMN completed_at TIMESTAMP;');
+
+          // Create report_images
+          await client.query(`
+            CREATE TABLE IF NOT EXISTS report_images (
+              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+              report_id UUID REFERENCES service_reports(id) ON DELETE CASCADE,
+              image_type VARCHAR(50),
+              url TEXT,
+              description TEXT,
+              created_at TIMESTAMP DEFAULT NOW()
+            );
+          `);
+          console.log('✅ Technician portal schema updates applied.');
+        }
+
         console.log('✅ Database schema already exists. Skipping initialization.');
         return;
       }
@@ -121,7 +200,6 @@ async function initializeDatabase() {
         customer_id UUID REFERENCES users(id) ON DELETE SET NULL,
         service_type VARCHAR(50),
         issue_description TEXT,
-        priority VARCHAR(20),
         status VARCHAR(50) DEFAULT 'new',
         svc_address TEXT,
         svc_city VARCHAR(100),
@@ -348,14 +426,14 @@ async function initializeDatabase() {
 
       // Seed Tickets
       await client.query(
-        `INSERT INTO tickets (ticket_number, customer_id, service_type, priority, status, svc_city)
-         VALUES ('TICK-100001', $1, 'installation', 'high', 'assigned', 'Mumbai') RETURNING id`,
+        `INSERT INTO tickets (ticket_number, customer_id, service_type, status, svc_city)
+         VALUES ('TICK-100001', $1, 'installation', 'assigned', 'Mumbai') RETURNING id`,
         [customerId]
       );
       
       await client.query(
-        `INSERT INTO tickets (ticket_number, customer_id, service_type, priority, status, svc_city)
-         VALUES ('TICK-100002', $1, 'complaint', 'urgent', 'new', 'Delhi') RETURNING id`,
+        `INSERT INTO tickets (ticket_number, customer_id, service_type, status, svc_city)
+         VALUES ('TICK-100002', $1, 'complaint', 'new', 'Delhi') RETURNING id`,
         [customerId]
       );
     }

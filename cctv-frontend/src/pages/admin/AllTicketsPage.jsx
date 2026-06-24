@@ -39,7 +39,7 @@ const AllTicketsPage = () => {
   // Form states
   const [createData, setCreateData] = useState({
     customerName: '', customerEmail: '', customerPhone: '',
-    serviceType: 'installation', issueDescription: '', priority: 'medium',
+    serviceType: 'installation', issueDescription: '',
     svcAddress: '', svcCity: '', svcState: '', svcPincode: ''
   });
   const [assignData, setAssignData] = useState({ assigneeId: '' });
@@ -80,7 +80,7 @@ const AllTicketsPage = () => {
       setShowCreateModal(false);
       setCreateData({
         customerName: '', customerEmail: '', customerPhone: '',
-        serviceType: 'installation', issueDescription: '', priority: 'medium',
+        serviceType: 'installation', issueDescription: '',
         svcAddress: '', svcCity: '', svcState: '', svcPincode: ''
       });
     }
@@ -186,12 +186,6 @@ const AllTicketsPage = () => {
   const columns = [
     { header: 'Ticket #', accessor: 'ticketNumber', cell: row => <span className="font-bold text-primary-600">{row.ticketNumber}</span> },
     { header: 'Service', accessor: 'serviceType', cell: row => <span className="capitalize">{row.serviceType.replace('_', ' ')}</span> },
-    { header: 'Priority', accessor: 'priority', cell: row => (
-        <span className={`capitalize font-medium ${row.priority === 'urgent' ? 'text-red-500' : row.priority === 'high' ? 'text-orange-500' : 'text-slate-600'}`}>
-          {row.priority}
-        </span>
-      ) 
-    },
     { header: 'Status', accessor: 'status', cell: row => <Badge color="blue">{row.status.replace(/_/g, ' ')}</Badge> },
     { header: 'Created', accessor: 'createdAt', cell: row => new Date(row.createdAt).toLocaleDateString() },
     { header: 'Action', cell: row => {

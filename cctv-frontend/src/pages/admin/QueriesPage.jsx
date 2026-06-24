@@ -246,11 +246,7 @@ const QueriesPage = () => {
           <h1 className="text-2xl font-bold text-slate-800">Public Queries</h1>
           <p className="text-sm text-slate-500 mt-0.5">Incoming customer enquiries — qualify to convert into a Lead</p>
         </div>
-        <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-400">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          Auto-refreshes every 30s
         </div>
-      </div>
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

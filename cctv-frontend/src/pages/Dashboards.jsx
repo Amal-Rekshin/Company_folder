@@ -4,18 +4,7 @@ import { Ticket, Clock, CheckCircle, CreditCard, Activity, Wrench, Users, Shield
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useDashboard } from '../hooks/useDashboard';
 import { useAuth } from '../context/AuthContext';
-import { LoadingPage } from '../components/ui/Loading';
-
-// Mock Data
-const data = [
-  { name: 'Mon', tickets: 4 },
-  { name: 'Tue', tickets: 3 },
-  { name: 'Wed', tickets: 7 },
-  { name: 'Thu', tickets: 5 },
-  { name: 'Fri', tickets: 8 },
-  { name: 'Sat', tickets: 2 },
-  { name: 'Sun', tickets: 1 },
-];
+import { LoadingPage } from '../components/ui/Loading';import { Link } from 'react-router-dom';
 
 export const CustomerDashboard = () => {
   const { user } = useAuth();
@@ -30,10 +19,10 @@ export const CustomerDashboard = () => {
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">Welcome back, {user?.name}!</h1>
           <p className="text-slate-500 mt-1">Here's what's happening with your service requests.</p>
         </div>
-        <button className="btn-primary flex items-center gap-2">
+        {/* <button className="btn-primary flex items-center gap-2">
           <Ticket className="w-4 h-4" />
           New Ticket
-        </button>
+        </button> */}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -121,21 +110,21 @@ export const AdminDashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <GlassCard className="flex items-center gap-4">
-          <div className="p-3 bg-blue-100 text-blue-600 rounded-lg"><Activity className="w-5 h-5" /></div>
-          <div><p className="text-slate-500 text-sm">Total Tickets</p><p className="text-2xl font-bold">{stats?.totalTickets || 0}</p></div>
+        <GlassCard className="flex items-center gap-4 hover:-translate-y-1 transition-transform group">
+          <div className="p-3 bg-blue-100 text-blue-600 rounded-xl group-hover:bg-blue-500 group-hover:text-white transition-colors"><Activity className="w-6 h-6" /></div>
+          <div><p className="text-slate-500 text-sm font-medium">Total Tickets</p><p className="text-3xl font-bold text-slate-800">{stats?.totalTickets || 0}</p></div>
         </GlassCard>
-        <GlassCard className="flex items-center gap-4">
-          <div className="p-3 bg-emerald-100 text-emerald-600 rounded-lg"><CreditCard className="w-5 h-5" /></div>
-          <div><p className="text-slate-500 text-sm">Open Tickets</p><p className="text-2xl font-bold">{stats?.openTickets || 0}</p></div>
+        <GlassCard className="flex items-center gap-4 hover:-translate-y-1 transition-transform group">
+          <div className="p-3 bg-amber-100 text-amber-600 rounded-xl group-hover:bg-amber-500 group-hover:text-white transition-colors"><CheckCircle className="w-6 h-6" /></div>
+          <div><p className="text-slate-500 text-sm font-medium">Open Tickets</p><p className="text-3xl font-bold text-slate-800">{stats?.openTickets || 0}</p></div>
         </GlassCard>
-        <GlassCard className="flex items-center gap-4">
-          <div className="p-3 bg-indigo-100 text-indigo-600 rounded-lg"><Wrench className="w-5 h-5" /></div>
-          <div><p className="text-slate-500 text-sm">Revenue</p><p className="text-2xl font-bold">${stats?.totalRevenue || 0}</p></div>
+        <GlassCard className="flex items-center gap-4 hover:-translate-y-1 transition-transform group">
+          <div className="p-3 bg-emerald-100 text-emerald-600 rounded-xl group-hover:bg-emerald-500 group-hover:text-white transition-colors"><CreditCard className="w-6 h-6" /></div>
+          <div><p className="text-slate-500 text-sm font-medium">Revenue</p><p className="text-3xl font-bold text-slate-800">₹{stats?.totalRevenue || 0}</p></div>
         </GlassCard>
-        <GlassCard className="flex items-center gap-4">
-          <div className="p-3 bg-violet-100 text-violet-600 rounded-lg"><Shield className="w-5 h-5" /></div>
-          <div><p className="text-slate-500 text-sm">Partners</p><p className="text-2xl font-bold">12</p></div>
+        <GlassCard className="flex items-center gap-4 hover:-translate-y-1 transition-transform group">
+          <div className="p-3 bg-indigo-100 text-indigo-600 rounded-xl group-hover:bg-indigo-500 group-hover:text-white transition-colors"><Shield className="w-6 h-6" /></div>
+          <div><p className="text-slate-500 text-sm font-medium">Active Partners</p><p className="text-3xl font-bold text-slate-800">{stats?.totalPartners || 0}</p></div>
         </GlassCard>
       </div>
 
@@ -143,35 +132,40 @@ export const AdminDashboard = () => {
         <GlassCard className="lg:col-span-2">
           <h2 className="text-lg font-bold text-slate-800 mb-6">Weekly Ticket Volume</h2>
           <div className="h-72 w-full">
-            {mounted && (
+            {mounted && stats?.weeklyTicketVolume && (
               <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                <BarChart data={data}>
+                <BarChart data={stats.weeklyTicketVolume}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                  <YAxis axisLine={false} tickLine={false} />
-                  <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
-                  <Bar dataKey="tickets" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b'}} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b'}} />
+                  <Tooltip cursor={{fill: '#f1f5f9'}} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} />
+                  <Bar dataKey="tickets" fill="#3b82f6" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
+            )}
+            {(!stats?.weeklyTicketVolume || stats.weeklyTicketVolume.length === 0) && (
+              <div className="w-full h-full flex items-center justify-center text-slate-400">
+                No tickets in the last 7 days.
+              </div>
             )}
           </div>
         </GlassCard>
 
-        <GlassCard dark>
-          <h2 className="text-lg font-bold mb-4">Pending Actions</h2>
+        <GlassCard dark className="bg-slate-800 text-white">
+          <h2 className="text-lg font-bold mb-6">Pending Actions</h2>
           <div className="space-y-4">
-            <div className="bg-white/10 p-4 rounded-xl">
-              <p className="font-medium text-sm">Unassigned Tickets</p>
-              <div className="flex justify-between items-center mt-2">
-                <span className="text-2xl font-bold">15</span>
-                <button className="text-xs bg-white text-dark-900 px-3 py-1.5 rounded-lg font-medium hover:bg-slate-200 transition-colors">Assign Now</button>
+            <div className="bg-slate-700/50 p-5 rounded-2xl border border-slate-600/50">
+              <p className="font-medium text-sm text-slate-300">Unassigned Tickets</p>
+              <div className="flex justify-between items-center mt-3">
+                <span className="text-3xl font-extrabold">{stats?.unassignedTickets || 0}</span>
+                <Link to="/admin/tickets" className="text-xs bg-white text-slate-900 px-4 py-2 rounded-xl font-bold hover:bg-slate-200 transition-colors">Assign Now</Link>
               </div>
             </div>
-            <div className="bg-white/10 p-4 rounded-xl">
-              <p className="font-medium text-sm">Pending Settlements</p>
-              <div className="flex justify-between items-center mt-2">
-                <span className="text-2xl font-bold">8</span>
-                <button className="text-xs bg-white text-dark-900 px-3 py-1.5 rounded-lg font-medium hover:bg-slate-200 transition-colors">Process</button>
+            <div className="bg-slate-700/50 p-5 rounded-2xl border border-slate-600/50">
+              <p className="font-medium text-sm text-slate-300">Pending Settlements</p>
+              <div className="flex justify-between items-center mt-3">
+                <span className="text-3xl font-extrabold">{stats?.pendingSettlements || 0}</span>
+                <Link to="/admin/settlements" className="text-xs bg-white text-slate-900 px-4 py-2 rounded-xl font-bold hover:bg-slate-200 transition-colors">Process</Link>
               </div>
             </div>
           </div>

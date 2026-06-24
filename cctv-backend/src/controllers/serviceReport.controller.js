@@ -36,12 +36,36 @@ async function getReport(req, res, next) {
       [req.params.id]
     );
     if (result.rows.length === 0) throw new AppError('Report not found', 404);
-    const report = result.rows[0];
+    const row = result.rows[0];
 
-    const images = await query(
-      'SELECT * FROM report_images WHERE report_id = $1', [report.id]
+    const imagesResult = await query(
+      'SELECT * FROM report_images WHERE report_id = $1', [row.id]
     );
-    return res.json({ ...report, images: images.rows });
+    
+    const mappedImages = imagesResult.rows.map(img => ({
+      id: img.id,
+      imageType: img.image_type,
+      url: img.url,
+      description: img.description
+    }));
+
+    const report = {
+      id: row.id,
+      ticketId: row.ticket_id,
+      technicianId: row.technician_id,
+      technicianName: row.technician_name,
+      workDone: row.work_done,
+      recommendations: row.recommendations,
+      materialsUsed: row.materials_used,
+      partsReplaced: row.parts_replaced,
+      customerSignatureUrl: row.customer_signature_url,
+      inspectionNotes: row.inspection_notes,
+      status: row.status,
+      completedAt: row.completed_at,
+      images: mappedImages
+    };
+
+    return res.json(report);
   } catch (err) {
     next(err);
   }

@@ -40,10 +40,6 @@ export const TicketCard = ({ ticket, onClick }) => {
           <MapPin className="w-3.5 h-3.5" />
           {ticket.svcCity}
         </div>
-        <div className="flex items-center gap-1.5">
-          <Wrench className="w-3.5 h-3.5" />
-          {ticket.priority}
-        </div>
       </div>
     </div>
   );

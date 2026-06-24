@@ -24,9 +24,9 @@ export const TicketTimeline = ({ currentStatus }) => {
   return (
     <div className="py-6">
       <div className="relative">
-        <div className="absolute top-1/2 left-0 w-full h-1 bg-slate-200 -translate-y-1/2 rounded-full hidden sm:block"></div>
+        <div className="absolute top-4 left-0 w-full h-1 bg-slate-200 -translate-y-1/2 rounded-full hidden sm:block"></div>
         <div 
-          className="absolute top-1/2 left-0 h-1 bg-primary-500 -translate-y-1/2 rounded-full hidden sm:block transition-all duration-500"
+          className="absolute top-4 left-0 h-1 bg-primary-500 -translate-y-1/2 rounded-full hidden sm:block transition-all duration-500"
           style={{ width: `${(currentIndex / (STEPS.length - 1)) * 100}%` }}
         ></div>
         

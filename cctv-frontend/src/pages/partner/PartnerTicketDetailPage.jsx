@@ -189,7 +189,6 @@ const PartnerTicketDetailPage = () => {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-5">
               <InfoRow icon={Wrench}       label="Service Type"   value={ticket?.serviceType?.replace(/_/g, ' ')} />
               <InfoRow icon={CalendarDays} label="Created"        value={ticket?.createdAt ? new Date(ticket.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'} />
-              <InfoRow icon={Hash}         label="Priority"       value={ticket?.priority}   iconClass="text-amber-500" />
               <div className="col-span-2 sm:col-span-3">
                 <InfoRow
                   icon={MapPin}

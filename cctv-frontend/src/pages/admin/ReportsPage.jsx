@@ -71,11 +71,10 @@ const ReportsPage = () => {
           </div>
         </GlassCard>
 
-        {/* Ticket Aging Pie Chart */}
         <GlassCard>
           <h2 className="text-lg font-bold mb-4">Ticket Aging</h2>
           <div className="h-64">
-            {mounted && (
+            {mounted && agingData.some(d => d.value > 0) ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={agingData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
@@ -86,6 +85,10 @@ const ReportsPage = () => {
                   <Tooltip />
                 </PieChart>
               </ResponsiveContainer>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-slate-400">
+                No active tickets to display.
+              </div>
             )}
           </div>
         </GlassCard>

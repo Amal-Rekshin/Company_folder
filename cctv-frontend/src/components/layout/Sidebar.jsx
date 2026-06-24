@@ -60,23 +60,29 @@ const Sidebar = ({ isOpen }) => {
   const navItems = getNavItems();
 
   return (
-    <aside className={`fixed lg:static inset-y-0 left-0 z-30 w-64 bg-dark-900 text-slate-300 transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-      <div className="flex items-center justify-center h-16 border-b border-white/10">
-        <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-400 to-primary-600 shadow-lg shadow-primary-500/20"></div>
-          CCTV<span className="text-primary-400 font-light">Pro</span>
+    <aside className={`fixed lg:static inset-y-0 left-0 z-30 w-64 bg-white border-r border-slate-200 text-slate-600 transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+      <div className="flex items-center justify-center h-16 border-b border-slate-200">
+        <h1 className="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
+          <div className="w-8 h-8 rounded-md bg-primary-600 shadow-sm flex items-center justify-center">
+            <span className="text-white font-extrabold text-sm">C</span>
+          </div>
+          CCTV<span className="text-primary-600 font-medium">Pro</span>
         </h1>
       </div>
       
-      <nav className="p-4 space-y-1 mt-4">
-        <p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Menu</p>
+      <nav className="p-4 space-y-1 mt-2">
+        <p className="px-3 text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Menu</p>
         {navItems.map((item) => {
           const active = isActiveItem(item.path);
           return (
             <Link 
               key={item.name} 
               to={item.path}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${active ? 'bg-primary-500/10 text-primary-400 font-medium' : 'hover:bg-white/5 hover:text-white'}`}
+              className={`flex items-center gap-3 px-3 py-2.5 transition-all ${
+                active 
+                  ? 'bg-primary-50 border-l-4 border-primary-600 text-primary-700 font-semibold' 
+                  : 'border-l-4 border-transparent hover:bg-slate-50 hover:text-slate-900 font-medium text-slate-600'
+              }`}
             >
               <item.icon className="w-5 h-5" />
               {item.name}
@@ -85,8 +91,8 @@ const Sidebar = ({ isOpen }) => {
         })}
       </nav>
 
-      <div className="absolute bottom-0 w-full p-4 border-t border-white/10">
-        <a href="#" className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 hover:text-white transition-all">
+      <div className="absolute bottom-0 w-full p-4 border-t border-slate-200">
+        <a href="#" className="flex items-center gap-3 px-3 py-2.5 border-l-4 border-transparent hover:bg-slate-50 hover:text-slate-900 font-medium text-slate-600 transition-all">
           <Settings className="w-5 h-5" />
           Settings
         </a>

@@ -15,7 +15,6 @@ const MyJobsPage = () => {
   const columns = [
     { header: 'Ticket #', accessor: 'ticketNumber', cell: row => <span className="font-bold text-primary-600">{row.ticketNumber}</span> },
     { header: 'Service', accessor: 'serviceType', cell: row => <span className="capitalize">{row.serviceType.replace('_', ' ')}</span> },
-    { header: 'Priority', accessor: 'priority', cell: row => <span className="capitalize">{row.priority}</span> },
     { header: 'Status', accessor: 'status', cell: row => <Badge color="blue">{row.status.replace(/_/g, ' ')}</Badge> },
     { header: 'City', accessor: 'svcCity' },
   ];

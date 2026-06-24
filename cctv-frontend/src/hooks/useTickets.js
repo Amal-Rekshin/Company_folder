@@ -23,6 +23,13 @@ export const useTickets = (params = {}) => {
   });
 };
 
+export const useMyQueries = () => {
+  return useQuery({
+    queryKey: ['queries', 'my'],
+    queryFn: () => ticketApi.getMyQueries().then(res => res.data)
+  });
+};
+
 export const useTicketDetails = (id) => {
   const { user } = useAuth();
   return useQuery({

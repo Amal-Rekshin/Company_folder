@@ -4,15 +4,15 @@ const AppError = require('../utils/AppError');
 // POST /api/public/queries
 async function submitQuery(req, res, next) {
   try {
-    const { name, phone, email, city, state, pincode, issueType, description, source } = req.body;
+    const { name, phone, email, city, state, pincode, issueType, description, source, customerId } = req.body;
 
     const result = await query(
       `INSERT INTO queries
-         (name, phone, email, city, state, pincode, issue_type, description, source, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'received')
+         (name, phone, email, city, state, pincode, issue_type, description, source, status, customer_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'received',$10)
        RETURNING *`,
       [name, phone, email || null, city, state || null, pincode || null,
-       issueType, description, source || 'website']
+       issueType, description, source || 'website', customerId || null]
     );
     return res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -84,12 +84,12 @@ async function acceptQuotation(req, res, next) {
 
     const ticketResult = await query(
       `INSERT INTO tickets
-         (ticket_number, customer_id, service_type, issue_description, priority, status,
-          svc_address, svc_city, svc_state, svc_pincode)
-       VALUES ($1,$2,$3,$4,'medium','new',$5,$6,$7,$8)
+         (ticket_number, customer_id, service_type, issue_description, status,
+          svc_address, svc_city, svc_state, svc_pincode, quotation_id)
+       VALUES ($1,$2,$3,$4,'new',$5,$6,$7,$8,$9)
        RETURNING id, ticket_number`,
       [ticketNumber, customerId, q.issue_type, q.description,
-       '', q.city, q.state || '', q.pincode || '']
+       q.city, q.state || '', q.pincode || '', quotation.id]
     );
     const ticket = ticketResult.rows[0];
 

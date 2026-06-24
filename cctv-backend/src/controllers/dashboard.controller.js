@@ -10,10 +10,34 @@ async function getAdminDashboard(req, res, next) {
     const revenue = await query(
       `SELECT COALESCE(SUM(gross_amount), 0) AS total FROM payments WHERE status = 'paid'`
     );
+    const partners = await query(
+      `SELECT COUNT(*) FROM users WHERE role = 'partner' AND is_active = true`
+    );
+    const unassigned = await query(
+      `SELECT COUNT(*) FROM tickets WHERE status = 'new'`
+    );
+    const pendingSettlements = await query(
+      `SELECT COUNT(p.id)
+       FROM payments p
+       JOIN partner_assignments pa ON pa.ticket_id = p.ticket_id AND pa.status = 'accepted'
+       WHERE p.status = 'paid'
+       AND p.id NOT IN (SELECT payment_id FROM settlements)`
+    );
+    const weeklyVol = await query(
+      `SELECT TO_CHAR(created_at, 'Dy') as name, COUNT(*) as tickets 
+       FROM tickets 
+       WHERE created_at >= current_date - interval '6 days' 
+       GROUP BY DATE(created_at), TO_CHAR(created_at, 'Dy')
+       ORDER BY DATE(created_at)`
+    );
     return res.json({
       totalTickets: parseInt(total.rows[0].count, 10),
       openTickets: parseInt(open.rows[0].count, 10),
       totalRevenue: parseFloat(revenue.rows[0].total),
+      totalPartners: parseInt(partners.rows[0].count, 10),
+      unassignedTickets: parseInt(unassigned.rows[0].count, 10),
+      pendingSettlements: parseInt(pendingSettlements.rows[0].count, 10),
+      weeklyTicketVolume: weeklyVol.rows.map(r => ({ name: r.name, tickets: parseInt(r.tickets, 10) }))
     });
   } catch (err) {
     next(err);

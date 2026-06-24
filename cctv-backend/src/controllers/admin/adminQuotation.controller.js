@@ -117,7 +117,7 @@ async function sendQuotation(req, res, next) {
 
     const updated = await query(
       `UPDATE quotations
-       SET status = 'sent', sent_at = NOW(), total_amount = $1, gst_amount = $2
+       SET status = 'sent', sent_at = NOW(), total_amount = $1, gst_amount = $2, accept_token = COALESCE(accept_token, gen_random_uuid()::varchar)
        WHERE id = $3 RETURNING *`,
       [totalAmount.toFixed(2), gstAmount.toFixed(2), quotId]
     );

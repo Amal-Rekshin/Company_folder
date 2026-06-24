@@ -66,7 +66,7 @@ async function createTicket(req, res, next) {
   try {
     const {
       customerEmail, customerName, customerPhone,
-      serviceType, issueDescription, priority,
+      serviceType, issueDescription,
       svcAddress, svcCity, svcState, svcPincode,
     } = req.body;
 
@@ -90,11 +90,11 @@ async function createTicket(req, res, next) {
     const ticketNumber = await generateTicketNumber();
     const ticketResult = await query(
       `INSERT INTO tickets
-         (ticket_number, customer_id, service_type, issue_description, priority, status,
+         (ticket_number, customer_id, service_type, issue_description, status,
           svc_address, svc_city, svc_state, svc_pincode)
-       VALUES ($1,$2,$3,$4,$5,'new',$6,$7,$8,$9)
+       VALUES ($1,$2,$3,$4,'new',$5,$6,$7,$8)
        RETURNING *`,
-      [ticketNumber, customerId, serviceType, issueDescription, priority || 'medium',
+      [ticketNumber, customerId, serviceType, issueDescription,
        svcAddress, svcCity, svcState, svcPincode]
     );
     return res.status(201).json(ticketResult.rows[0]);
@@ -129,7 +129,7 @@ async function assignTicket(req, res, next) {
 
     // 2. Remove existing schedules for this ticket
     await client.query(
-      `DELETE FROM schedules WHERE ticket_id = $1`, 
+      `DELETE FROM service_schedules WHERE ticket_id = $1`, 
       [ticketId]
     );
 
@@ -344,7 +344,7 @@ async function getTechnicianDetails(req, res, next) {
 
     const ticketsResult = await query(
       `SELECT * FROM (
-         SELECT DISTINCT ON (t.id) t.id, t.ticket_number, t.service_type, t.priority, t.status, t.created_at, ta.status AS assignment_status
+         SELECT DISTINCT ON (t.id) t.id, t.ticket_number, t.service_type, t.status, t.created_at, ta.status AS assignment_status
          FROM tickets t
          JOIN technician_assignments ta ON ta.ticket_id = t.id
          WHERE ta.technician_id = $1
@@ -451,7 +451,7 @@ async function getPartnerDetails(req, res, next) {
 
     const ticketsResult = await query(
       `SELECT * FROM (
-         SELECT DISTINCT ON (t.id) t.id, t.ticket_number, t.service_type, t.priority, t.status, t.created_at, pa.status AS assignment_status
+         SELECT DISTINCT ON (t.id) t.id, t.ticket_number, t.service_type, t.status, t.created_at, pa.status AS assignment_status
          FROM tickets t
          JOIN partner_assignments pa ON pa.ticket_id = t.id
          WHERE pa.partner_id = $1

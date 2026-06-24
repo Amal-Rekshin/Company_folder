@@ -40,6 +40,7 @@ export const adminApi = {
   getDailyReport: () => axiosInstance.get('/admin/reports/daily'),
   getRevenueReport: (startDate, endDate) => axiosInstance.get('/admin/reports/revenue', { params: { startDate, endDate } }),
   getTechnicianPerformance: () => axiosInstance.get('/admin/reports/technician-performance'),
+  getTicketAging: () => axiosInstance.get('/admin/reports/ticket-aging'),
   // Settlements
   getPendingSettlements: () => axiosInstance.get('/admin/settlements/pending'),
   getSettlementBatches: () => axiosInstance.get('/admin/settlements/batches'),

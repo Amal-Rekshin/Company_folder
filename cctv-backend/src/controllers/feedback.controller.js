@@ -6,7 +6,7 @@ async function submitFeedback(req, res, next) {
   try {
     const ticketId = req.params.id;
     const customerId = req.user.id;
-    const { rating, comment, technicianId } = req.body;
+    const { rating, comments, technicianId } = req.body;
 
     const ticketCheck = await query(
       'SELECT id, customer_id FROM tickets WHERE id = $1', [ticketId]
@@ -16,10 +16,10 @@ async function submitFeedback(req, res, next) {
       throw new AppError('Only the ticket owner can submit feedback', 403);
 
     const result = await query(
-      `INSERT INTO feedbacks (ticket_id, customer_id, technician_id, rating, comment)
+      `INSERT INTO feedbacks (ticket_id, customer_id, technician_id, rating, comments)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [ticketId, customerId, technicianId || null, rating, comment || null]
+      [ticketId, customerId, technicianId || null, rating, comments || null]
     );
     return res.status(201).json(result.rows[0]);
   } catch (err) {

@@ -51,7 +51,6 @@ function mapTicket(row) {
     customerName: row.customer_name,
     serviceType: row.service_type,
     issueDescription: row.issue_description,
-    priority: row.priority,
     status: row.status,
     svcAddress: row.svc_address,
     svcCity: row.svc_city,
@@ -67,18 +66,18 @@ async function createTicket(req, res, next) {
   const client = await getClient();
   try {
     await client.query('BEGIN');
-    const { serviceType, issueDescription, priority, svcAddress, svcCity, svcState, svcPincode } = req.body;
+    const { serviceType, issueDescription, svcAddress, svcCity, svcState, svcPincode } = req.body;
     const customerId = req.user.id;
 
     const ticketNumber = await generateTicketNumber();
 
     const ticketResult = await client.query(
       `INSERT INTO tickets
-         (ticket_number, customer_id, service_type, issue_description, priority, status,
+         (ticket_number, customer_id, service_type, issue_description, status,
           svc_address, svc_city, svc_state, svc_pincode)
-       VALUES ($1,$2,$3,$4,$5,'new',$6,$7,$8,$9)
+       VALUES ($1,$2,$3,$4,'new',$5,$6,$7,$8)
        RETURNING *`,
-      [ticketNumber, customerId, serviceType, issueDescription, priority || 'medium',
+      [ticketNumber, customerId, serviceType, issueDescription,
        svcAddress, svcCity, svcState, svcPincode]
     );
     const ticket = ticketResult.rows[0];
@@ -164,16 +163,47 @@ async function getMyTickets(req, res, next) {
   }
 }
 
+// GET /api/tickets/my-queries (customer)
+async function getMyQueries(req, res, next) {
+  try {
+    const customerId = req.user.id;
+    const result = await query(
+      `SELECT DISTINCT ON (q.created_at, q.id) 
+              q.id, q.issue_type, q.description, q.status AS query_status, q.created_at,
+              l.id AS lead_id, l.status AS lead_status,
+              quot.id AS quotation_id, quot.status AS quotation_status,
+              quot.total_amount, quot.accept_token
+       FROM queries q
+       LEFT JOIN leads l ON l.query_id = q.id
+       LEFT JOIN quotations quot ON quot.lead_id = l.id
+       WHERE q.customer_id = $1
+       ORDER BY q.created_at DESC, q.id, quot.version DESC NULLS LAST`,
+      [customerId]
+    );
+    return res.json(result.rows);
+  } catch (err) {
+    next(err);
+  }
+}
+
 // GET /api/tickets/:id
 async function getTicketById(req, res, next) {
   try {
     const result = await query(
-      `SELECT t.*, u.name AS customer_name FROM tickets t
-       JOIN users u ON u.id = t.customer_id WHERE t.id = $1`,
+      `SELECT t.*, u.name AS customer_name, q.accept_token AS quotation_accept_token 
+       FROM tickets t
+       JOIN users u ON u.id = t.customer_id 
+       LEFT JOIN quotations q ON q.id = t.quotation_id
+       WHERE t.id = $1`,
       [req.params.id]
     );
     if (result.rows.length === 0) throw new AppError('Ticket not found', 404);
-    return res.json(mapTicket(result.rows[0]));
+    
+    const row = result.rows[0];
+    const mapped = mapTicket(row);
+    mapped.quotationAcceptToken = row.quotation_accept_token;
+    
+    return res.json(mapped);
   } catch (err) {
     next(err);
   }
@@ -319,6 +349,7 @@ module.exports = {
   createTicket,
   getAllTickets,
   getMyTickets,
+  getMyQueries,
   getMyAssignedTickets,
   getTicketById,
   updateStatus,

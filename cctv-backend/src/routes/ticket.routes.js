@@ -5,6 +5,7 @@ const ctrl = require('../controllers/ticket.controller');
 router.post('/', verifyToken, requireRole('customer'), ctrl.createTicket);
 router.get('/', verifyToken, requireRole('admin'), ctrl.getAllTickets);
 router.get('/my', verifyToken, requireRole('customer'), ctrl.getMyTickets);
+router.get('/my-queries', verifyToken, requireRole('customer'), ctrl.getMyQueries);
 router.get('/my-assigned', verifyToken, requireRole('partner', 'technician'), ctrl.getMyAssignedTickets);
 router.get('/:id', verifyToken, ctrl.getTicketById);
 router.patch('/:id/status', verifyToken, requireRole('admin', 'technician'), ctrl.updateStatus);

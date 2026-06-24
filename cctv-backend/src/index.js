@@ -69,6 +69,10 @@ app.use(errorHandler);
 
 const initializeDatabase = require('./config/initDb');
 
+// Initialize background cron jobs
+const { initCronJobs } = require('./utils/cronJobs');
+initCronJobs();
+
 // ─── Start Server ──────────────────────────────────────────────────────────────
 initializeDatabase().then(() => {
   app.listen(PORT, () => {

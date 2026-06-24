@@ -1,6 +1,24 @@
 const { query } = require('../config/db');
 const AppError = require('../utils/AppError');
 
+// GET /api/schedules/my  (technician)
+async function getMySchedules(req, res, next) {
+  try {
+    const technicianId = req.user.id;
+    const result = await query(
+      `SELECT ss.*, t.ticket_number, t.service_type, t.svc_address, t.svc_city
+       FROM service_schedules ss
+       JOIN tickets t ON t.id = ss.ticket_id
+       WHERE ss.technician_id = $1
+       ORDER BY ss.scheduled_date DESC`,
+      [technicianId]
+    );
+    return res.json(result.rows);
+  } catch (err) {
+    next(err);
+  }
+}
+
 // POST /api/schedules  (technician)
 async function scheduleVisit(req, res, next) {
   try {
@@ -56,4 +74,4 @@ async function rescheduleVisit(req, res, next) {
   }
 }
 
-module.exports = { scheduleVisit, rescheduleVisit };
+module.exports = { scheduleVisit, rescheduleVisit, getMySchedules };
