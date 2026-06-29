@@ -46,6 +46,7 @@ import QuotationForm from './pages/admin/QuotationForm';
 import ReportsPage from './pages/admin/ReportsPage';
 import ServiceReportPage from './pages/technician/ServiceReportPage';
 import PartnerTicketDetailPage from './pages/partner/PartnerTicketDetailPage';
+import SettingsPage from './pages/shared/SettingsPage';
 
 const queryClient = new QueryClient();
 
@@ -68,6 +69,7 @@ const App = () => {
                 <Route path="/customer/tickets/:id" element={<TicketDetailPage />} />
                 <Route path="/customer/invoices" element={<PaymentPage />} />
                 <Route path="/customer/profile" element={<CustomerProfilePage />} />
+                <Route path="/customer/settings" element={<SettingsPage />} />
               </Route>
             </Route>
             
@@ -90,6 +92,7 @@ const App = () => {
                 <Route path="/admin/leads/:id/create-quotation" element={<QuotationForm />} />
                 <Route path="/admin/leads/:id/edit-quotation/:quotationId" element={<QuotationForm />} />
                 <Route path="/admin/quotations" element={<QuotationsPage />} />
+                <Route path="/admin/settings" element={<SettingsPage />} />
               </Route>
             </Route>
             
@@ -99,6 +102,7 @@ const App = () => {
                 <Route path="/technician/jobs/:id" element={<JobDetailPage />} />
                 <Route path="/technician/jobs/:id/report" element={<ServiceReportPage />} />
                 <Route path="/technician/schedule" element={<ScheduleCalendarPage />} />
+                <Route path="/technician/settings" element={<SettingsPage />} />
               </Route>
             </Route>
 
@@ -107,6 +111,7 @@ const App = () => {
                 <Route path="/partner" element={<IncomingTicketsPage />} />
                 <Route path="/partner/tickets/:id" element={<PartnerTicketDetailPage />} />
                 <Route path="/partner/earnings" element={<EarningsPage />} />
+                <Route path="/partner/settings" element={<SettingsPage />} />
               </Route>
             </Route>
 

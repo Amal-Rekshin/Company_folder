@@ -53,8 +53,9 @@ async function initializeDatabase() {
       if (!checkQuotationsCol.rows[0].exists) {
         console.log('⚠️ quotations table is outdated. Re-creating quotations and quotation_items...');
         await client.query('DROP TABLE IF EXISTS quotations CASCADE;');
-      } else {
-        // ── Run incremental migrations ──────────────────────────────────────────
+      }
+
+      // ── Run incremental migrations ──────────────────────────────────────────
         // Migration: create ticket_status_log if missing
         const checkStatusLog = await client.query(`
           SELECT EXISTS (
@@ -88,6 +89,18 @@ async function initializeDatabase() {
         if (!checkQueriesCustomerCol.rows[0].exists) {
           console.log('⚠️ Adding customer_id to queries table...');
           await client.query('ALTER TABLE queries ADD COLUMN customer_id UUID REFERENCES users(id) ON DELETE SET NULL;');
+        }
+
+        // Migration: add quotation_id to tickets
+        const checkTicketsQuotationCol = await client.query(`
+          SELECT EXISTS (
+            SELECT FROM information_schema.columns
+            WHERE table_name = 'tickets' AND column_name = 'quotation_id'
+          );
+        `);
+        if (!checkTicketsQuotationCol.rows[0].exists) {
+          console.log('⚠️ Adding quotation_id to tickets table...');
+          await client.query('ALTER TABLE tickets ADD COLUMN quotation_id UUID REFERENCES quotations(id) ON DELETE SET NULL;');
         }
 
         // Migration: create missing tables and columns for technician portal
@@ -179,12 +192,39 @@ async function initializeDatabase() {
           `);
         }
 
-        console.log('✅ Database schema already exists. Skipping initialization.');
-        return;
-      }
+        // Migration: add address fields to users
+        const checkUsersAddressCol = await client.query(`
+          SELECT EXISTS (
+            SELECT FROM information_schema.columns
+            WHERE table_name = 'users' AND column_name = 'address'
+          );
+        `);
+        if (!checkUsersAddressCol.rows[0].exists) {
+          console.log('⚠️ Adding address fields to users table...');
+          await client.query('ALTER TABLE users ADD COLUMN address TEXT;');
+          await client.query('ALTER TABLE users ADD COLUMN city VARCHAR(100);');
+          await client.query('ALTER TABLE users ADD COLUMN state VARCHAR(100);');
+          await client.query('ALTER TABLE users ADD COLUMN pincode VARCHAR(20);');
+        }
+
+        // Migration: add address to queries
+        const checkQueriesAddressCol = await client.query(`
+          SELECT EXISTS (
+            SELECT FROM information_schema.columns
+            WHERE table_name = 'queries' AND column_name = 'address'
+          );
+        `);
+        if (!checkQueriesAddressCol.rows[0].exists) {
+          console.log('⚠️ Adding address to queries table...');
+          await client.query('ALTER TABLE queries ADD COLUMN address TEXT;');
+        }
+
+      console.log('✅ Database schema already exists. Skipping initialization.');
+      return;
     }
 
     console.log('⚠️ Database schema not found. Initializing tables...');
+
 
     // ─── 1. CREATE TABLES ────────────────────────────────────────────────────────
     await client.query('BEGIN');
@@ -198,6 +238,10 @@ async function initializeDatabase() {
         password_hash VARCHAR(255) NOT NULL,
         role VARCHAR(50) NOT NULL,
         is_active BOOLEAN DEFAULT true,
+        address TEXT,
+        city VARCHAR(100),
+        state VARCHAR(100),
+        pincode VARCHAR(20),
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       );
@@ -216,93 +260,6 @@ async function initializeDatabase() {
         commission_rate DECIMAL(5,2) DEFAULT 10.0
       );
 
-      CREATE TABLE IF NOT EXISTS tickets (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        ticket_number VARCHAR(20) UNIQUE NOT NULL,
-        customer_id UUID REFERENCES users(id) ON DELETE SET NULL,
-        service_type VARCHAR(50),
-        issue_description TEXT,
-        status VARCHAR(50) DEFAULT 'new',
-        svc_address TEXT,
-        svc_city VARCHAR(100),
-        svc_state VARCHAR(100),
-        svc_pincode VARCHAR(20),
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
-      );
-
-      CREATE TABLE IF NOT EXISTS technician_assignments (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        ticket_id UUID REFERENCES tickets(id) ON DELETE CASCADE,
-        technician_id UUID REFERENCES users(id) ON DELETE CASCADE,
-        status VARCHAR(50),
-        assigned_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
-      );
-
-      CREATE TABLE IF NOT EXISTS partner_assignments (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        ticket_id UUID REFERENCES tickets(id) ON DELETE CASCADE,
-        partner_id UUID REFERENCES users(id) ON DELETE CASCADE,
-        status VARCHAR(50),
-        assigned_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
-      );
-
-      CREATE TABLE IF NOT EXISTS estimates (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        ticket_id UUID REFERENCES tickets(id) ON DELETE CASCADE,
-        technician_id UUID REFERENCES users(id) ON DELETE CASCADE,
-        partner_id UUID REFERENCES users(id) ON DELETE CASCADE,
-        amount DECIMAL(10,2),
-        details TEXT,
-        status VARCHAR(50),
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
-      );
-
-      CREATE TABLE IF NOT EXISTS payments (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        ticket_id UUID REFERENCES tickets(id) ON DELETE CASCADE,
-        customer_id UUID REFERENCES users(id) ON DELETE CASCADE,
-        gross_amount DECIMAL(10,2),
-        commission_amount DECIMAL(10,2),
-        method VARCHAR(50),
-        status VARCHAR(50),
-        gateway_ref VARCHAR(100),
-        paid_at TIMESTAMP,
-        created_at TIMESTAMP DEFAULT NOW()
-      );
-
-      CREATE TABLE IF NOT EXISTS feedbacks (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        ticket_id UUID REFERENCES tickets(id) ON DELETE CASCADE,
-        customer_id UUID REFERENCES users(id) ON DELETE CASCADE,
-        technician_id UUID REFERENCES users(id) ON DELETE CASCADE,
-        rating DECIMAL(2,1),
-        comments TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
-      );
-
-      CREATE TABLE IF NOT EXISTS schedules (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        ticket_id UUID REFERENCES tickets(id) ON DELETE CASCADE,
-        technician_id UUID REFERENCES users(id) ON DELETE CASCADE,
-        scheduled_date DATE,
-        time_slot VARCHAR(50),
-        status VARCHAR(50),
-        created_at TIMESTAMP DEFAULT NOW()
-      );
-
-      CREATE TABLE IF NOT EXISTS service_reports (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        ticket_id UUID REFERENCES tickets(id) ON DELETE CASCADE,
-        technician_id UUID REFERENCES users(id) ON DELETE CASCADE,
-        report_text TEXT,
-        status VARCHAR(50),
-        submitted_at TIMESTAMP DEFAULT NOW()
-      );
-
       CREATE TABLE IF NOT EXISTS notifications (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -315,9 +272,11 @@ async function initializeDatabase() {
 
       CREATE TABLE IF NOT EXISTS queries (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        customer_id UUID REFERENCES users(id) ON DELETE SET NULL,
         name VARCHAR(100),
         email VARCHAR(100),
         phone VARCHAR(20),
+        address TEXT,
         city VARCHAR(100),
         state VARCHAR(100),
         pincode VARCHAR(20),
@@ -345,6 +304,8 @@ async function initializeDatabase() {
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         lead_id UUID REFERENCES leads(id) ON DELETE CASCADE,
         created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+        customer_name VARCHAR(100),
+        customer_phone VARCHAR(50),
         notes TEXT,
         terms TEXT,
         valid_until DATE,
@@ -357,8 +318,6 @@ async function initializeDatabase() {
         sent_at TIMESTAMP,
         responded_at TIMESTAMP,
         rejection_reason TEXT,
-        customer_name VARCHAR(100),
-        customer_phone VARCHAR(50),
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       );
@@ -369,6 +328,138 @@ async function initializeDatabase() {
         description TEXT,
         unit_price DECIMAL(10,2),
         quantity INT DEFAULT 1
+      );
+
+      CREATE TABLE IF NOT EXISTS tickets (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        ticket_number VARCHAR(20) UNIQUE NOT NULL,
+        customer_id UUID REFERENCES users(id) ON DELETE SET NULL,
+        quotation_id UUID REFERENCES quotations(id) ON DELETE SET NULL,
+        service_type VARCHAR(50),
+        issue_description TEXT,
+        status VARCHAR(50) DEFAULT 'new',
+        svc_address TEXT,
+        svc_city VARCHAR(100),
+        svc_state VARCHAR(100),
+        svc_pincode VARCHAR(20),
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS ticket_status_log (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        ticket_id UUID REFERENCES tickets(id) ON DELETE CASCADE,
+        from_status VARCHAR(50),
+        to_status VARCHAR(50),
+        changed_by UUID REFERENCES users(id) ON DELETE SET NULL,
+        note TEXT,
+        changed_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS technician_assignments (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        ticket_id UUID REFERENCES tickets(id) ON DELETE CASCADE,
+        technician_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        status VARCHAR(50),
+        assigned_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS partner_assignments (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        ticket_id UUID REFERENCES tickets(id) ON DELETE CASCADE,
+        partner_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        status VARCHAR(50),
+        assigned_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS estimates (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        ticket_id UUID REFERENCES tickets(id) ON DELETE CASCADE,
+        technician_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        partner_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+        approved_by UUID REFERENCES users(id) ON DELETE SET NULL,
+        amount DECIMAL(10,2),
+        approved_total DECIMAL(10,2),
+        details TEXT,
+        notes TEXT,
+        status VARCHAR(50),
+        version INT DEFAULT 1,
+        valid_until DATE,
+        submitted_at TIMESTAMP,
+        responded_at TIMESTAMP,
+        rejection_reason TEXT,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS estimate_items (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        estimate_id UUID REFERENCES estimates(id) ON DELETE CASCADE,
+        description TEXT,
+        unit_price DECIMAL(10,2),
+        quantity INT DEFAULT 1
+      );
+
+      CREATE TABLE IF NOT EXISTS payments (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        ticket_id UUID REFERENCES tickets(id) ON DELETE CASCADE,
+        customer_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        gross_amount DECIMAL(10,2),
+        commission_amount DECIMAL(10,2),
+        method VARCHAR(50),
+        status VARCHAR(50),
+        gateway_ref VARCHAR(100),
+        paid_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS feedbacks (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        ticket_id UUID REFERENCES tickets(id) ON DELETE CASCADE,
+        customer_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        technician_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        rating DECIMAL(2,1),
+        comments TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS service_schedules (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        ticket_id UUID REFERENCES tickets(id) ON DELETE CASCADE,
+        technician_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        scheduled_date DATE,
+        scheduled_time VARCHAR(50),
+        reschedule_reason TEXT,
+        status VARCHAR(50),
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS service_reports (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        ticket_id UUID REFERENCES tickets(id) ON DELETE CASCADE,
+        technician_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        report_text TEXT,
+        inspection_notes TEXT,
+        work_done TEXT,
+        recommendations TEXT,
+        materials_used TEXT,
+        parts_replaced TEXT,
+        customer_signature_url TEXT,
+        status VARCHAR(50),
+        submitted_at TIMESTAMP DEFAULT NOW(),
+        completed_at TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS report_images (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        report_id UUID REFERENCES service_reports(id) ON DELETE CASCADE,
+        image_type VARCHAR(50),
+        url TEXT,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
       );
 
       CREATE TABLE IF NOT EXISTS settlement_batches (

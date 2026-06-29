@@ -4,16 +4,26 @@ const AppError = require('../utils/AppError');
 // POST /api/public/queries
 async function submitQuery(req, res, next) {
   try {
-    const { name, phone, email, city, state, pincode, issueType, description, source, customerId } = req.body;
+    const { name, phone, email, address, city, state, pincode, issueType, description, source, customerId } = req.body;
 
     const result = await query(
       `INSERT INTO queries
-         (name, phone, email, city, state, pincode, issue_type, description, source, status, customer_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'received',$10)
+         (name, phone, email, address, city, state, pincode, issue_type, description, source, status, customer_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'received',$11)
        RETURNING *`,
-      [name, phone, email || null, city, state || null, pincode || null,
+      [name, phone, email || null, address || null, city, state || null, pincode || null,
        issueType, description, source || 'website', customerId || null]
     );
+    
+    // Notify admin
+    try {
+      await query(
+        `INSERT INTO notifications (user_id, title, message, type, is_read)
+         VALUES (NULL, 'New Query Received', $1, 'new_query', false)`,
+        [`New query from ${name} regarding ${issueType}`]
+      );
+    } catch (_) {}
+
     return res.status(201).json(result.rows[0]);
   } catch (err) {
     next(err);
@@ -88,10 +98,19 @@ async function acceptQuotation(req, res, next) {
           svc_address, svc_city, svc_state, svc_pincode, quotation_id)
        VALUES ($1,$2,$3,$4,'new',$5,$6,$7,$8,$9)
        RETURNING id, ticket_number`,
-      [ticketNumber, customerId, q.issue_type, q.description,
+      [ticketNumber, customerId, q.issue_type, q.description, q.address || '',
        q.city, q.state || '', q.pincode || '', quotation.id]
     );
     const ticket = ticketResult.rows[0];
+
+    // Notify admin
+    try {
+      await query(
+        `INSERT INTO notifications (user_id, title, message, type, is_read)
+         VALUES (NULL, 'Quotation Accepted', $1, 'ticket_update', false)`,
+        [`Quotation for lead #${quotation.lead_id} was accepted. Ticket ${ticket.ticket_number} created automatically.`]
+      );
+    } catch (_) {}
 
     // Update lead as converted
     await query(

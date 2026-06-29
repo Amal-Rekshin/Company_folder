@@ -4,19 +4,30 @@ const AppError = require('../utils/AppError');
 // GET /api/notifications
 async function getNotifications(req, res, next) {
   try {
-    const userId = req.user.id;
     const page = Math.max(parseInt(req.query.page, 10) || 0, 0);
     const size = Math.min(parseInt(req.query.size, 10) || 20, 100);
     const offset = page * size;
+    const isAdmin = req.user.role === 'admin';
 
-    const result = await query(
-      `SELECT * FROM notifications WHERE user_id = $1
-       ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
-      [userId, size, offset]
-    );
-    const total = await query(
-      'SELECT COUNT(*) FROM notifications WHERE user_id = $1', [userId]
-    );
+    let result, total;
+    if (isAdmin) {
+      result = await query(
+        `SELECT n.*, u.name AS user_name, u.email AS user_email
+         FROM notifications n
+         LEFT JOIN users u ON u.id = n.user_id
+         ORDER BY n.created_at DESC LIMIT $1 OFFSET $2`,
+        [size, offset]
+      );
+      total = await query('SELECT COUNT(*) FROM notifications');
+    } else {
+      result = await query(
+        `SELECT * FROM notifications WHERE user_id = $1
+         ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
+        [req.user.id, size, offset]
+      );
+      total = await query('SELECT COUNT(*) FROM notifications WHERE user_id = $1', [req.user.id]);
+    }
+
     return res.json({
       content: result.rows,
       totalElements: parseInt(total.rows[0].count, 10),
@@ -31,10 +42,12 @@ async function getNotifications(req, res, next) {
 // GET /api/notifications/unread-count
 async function getUnreadCount(req, res, next) {
   try {
-    const result = await query(
-      'SELECT COUNT(*) FROM notifications WHERE user_id = $1 AND is_read = false',
-      [req.user.id]
-    );
+    const isAdmin = req.user.role === 'admin';
+    const queryStr = isAdmin 
+      ? 'SELECT COUNT(*) FROM notifications WHERE is_read = false'
+      : 'SELECT COUNT(*) FROM notifications WHERE user_id = $1 AND is_read = false';
+    const params = isAdmin ? [] : [req.user.id];
+    const result = await query(queryStr, params);
     return res.json({ unreadCount: parseInt(result.rows[0].count, 10) });
   } catch (err) {
     next(err);
@@ -49,7 +62,7 @@ async function markAsRead(req, res, next) {
     );
     if (notifResult.rows.length === 0) throw new AppError('Notification not found', 404);
     const notif = notifResult.rows[0];
-    if (notif.user_id !== req.user.id)
+    if (notif.user_id !== req.user.id && req.user.role !== 'admin')
       throw new AppError("Cannot mark another user's notification as read", 403);
 
     await query(
@@ -64,9 +77,14 @@ async function markAsRead(req, res, next) {
 // POST /api/notifications/mark-all-read
 async function markAllAsRead(req, res, next) {
   try {
-    await query(
-      'UPDATE notifications SET is_read = true WHERE user_id = $1', [req.user.id]
-    );
+    const isAdmin = req.user.role === 'admin';
+    if (isAdmin) {
+      await query('UPDATE notifications SET is_read = true');
+    } else {
+      await query(
+        'UPDATE notifications SET is_read = true WHERE user_id = $1', [req.user.id]
+      );
+    }
     return res.status(200).json({ message: 'All notifications marked as read' });
   } catch (err) {
     next(err);

@@ -93,10 +93,10 @@ const Sidebar = ({ isOpen }) => {
       </nav>
 
       <div className="absolute bottom-0 w-full p-4 border-t border-slate-200">
-        <a href="#" className="flex items-center gap-3 px-3 py-2.5 border-l-4 border-transparent hover:bg-slate-50 hover:text-slate-900 font-medium text-slate-600 transition-all">
+        <Link to={`/${user?.role || 'customer'}/settings`} className="flex items-center gap-3 px-3 py-2.5 border-l-4 border-transparent hover:bg-slate-50 hover:text-slate-900 font-medium text-slate-600 transition-all">
           <Settings className="w-5 h-5" />
           Settings
-        </a>
+        </Link>
       </div>
     </aside>
   );

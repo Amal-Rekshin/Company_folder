@@ -7,7 +7,7 @@ import { GlassCard, Button, Input } from '../../components/ui/Components';
 const PublicQueryPage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    name: '', phone: '', email: '', city: '', state: '', pincode: '',
+    name: '', phone: '', email: '', address: '', city: '', state: '', pincode: '',
     issueType: 'complaint', description: '', source: 'website'
   });
 
@@ -50,6 +50,11 @@ const PublicQueryPage = () => {
                   <option value="general">General Inquiry</option>
                 </select>
               </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-slate-700">Street Address</label>
+              <textarea name="address" value={formData.address} onChange={handleChange} required rows={2} className="w-full px-4 py-2 bg-white/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none resize-none" placeholder="123 Main St, Apt 4B"></textarea>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

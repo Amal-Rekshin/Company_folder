@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { publicApi } from '../../api/publicApi';
+import { userApi } from '../../api/userApi';
 import { GlassCard } from '../../components/ui/Components';
 
 const CreateTicketPage = () => {
@@ -12,10 +13,42 @@ const CreateTicketPage = () => {
     issueType: 'complaint',
     phone: '',
     description: '',
+    address: '',
     city: '',
     state: '',
     pincode: ''
   });
+  
+  const [useSavedAddress, setUseSavedAddress] = useState(false);
+  const [profile, setProfile] = useState(null);
+
+  React.useEffect(() => {
+    if (user?.userId || user?.id) {
+      userApi.getProfile().then(res => setProfile(res.data)).catch(console.error);
+    }
+  }, [user]);
+
+  const handleCheckboxChange = (e) => {
+    const checked = e.target.checked;
+    setUseSavedAddress(checked);
+    if (checked && profile) {
+      setFormData(prev => ({
+        ...prev,
+        address: profile.address || '',
+        city: profile.city || '',
+        state: profile.state || '',
+        pincode: profile.pincode || ''
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        address: '',
+        city: '',
+        state: '',
+        pincode: ''
+      }));
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,6 +58,7 @@ const CreateTicketPage = () => {
         name: user?.name || 'Customer',
         email: user?.email || '',
         phone: formData.phone,
+        address: formData.address,
         city: formData.city,
         state: formData.state,
         pincode: formData.pincode,
@@ -86,7 +120,31 @@ const CreateTicketPage = () => {
           </div>
 
           <div className="border-t border-slate-200 pt-6">
-            <h3 className="font-semibold text-slate-800 mb-4">Service Location</h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-slate-800">Service Location</h3>
+              <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={useSavedAddress} 
+                  onChange={handleCheckboxChange}
+                  className="rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-4 h-4"
+                />
+                Use saved address
+              </label>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Street Address</label>
+              <textarea 
+                className="input-field resize-none" 
+                required 
+                rows={2}
+                value={formData.address} 
+                onChange={e => setFormData({...formData, address: e.target.value})} 
+                placeholder="123 Main St, Apt 4B"
+              />
+            </div>
+
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">City</label>

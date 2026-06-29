@@ -20,13 +20,13 @@
 }
 
 @layer components {
-  /* Premium Glassmorphism Cards */
+  /* Premium Professional Cards */
   .glass-card {
-    @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-2xl;
+    @apply bg-white border border-slate-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] rounded-2xl transition-all duration-300;
   }
   
   .glass-card-dark {
-    @apply bg-dark-800/80 backdrop-blur-md border border-dark-700 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-2xl text-white;
+    @apply bg-slate-800 border border-slate-700 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.15)] rounded-2xl text-white transition-all duration-300;
   }
 
   /* Interactive Buttons */

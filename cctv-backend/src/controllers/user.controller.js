@@ -7,7 +7,7 @@ async function getProfile(req, res, next) {
   try {
     const userId = req.user.id;
     const result = await query(
-      'SELECT id, name, email, phone, role, is_active, created_at FROM users WHERE id = $1',
+      'SELECT id, name, email, phone, role, is_active, created_at, address, city, state, pincode FROM users WHERE id = $1',
       [userId]
     );
 
@@ -25,7 +25,7 @@ async function getProfile(req, res, next) {
 async function updateProfile(req, res, next) {
   try {
     const userId = req.user.id;
-    const { name, email, phone, password } = req.body;
+    const { name, email, phone, password, address, city, state, pincode } = req.body;
 
     // Get current user to compare values
     const currentUserRes = await query('SELECT email, phone FROM users WHERE id = $1', [userId]);
@@ -66,6 +66,22 @@ async function updateProfile(req, res, next) {
       updates.push(`password_hash = $${paramIndex++}`);
       values.push(passwordHash);
     }
+    if (address !== undefined) {
+      updates.push(`address = $${paramIndex++}`);
+      values.push(address);
+    }
+    if (city !== undefined) {
+      updates.push(`city = $${paramIndex++}`);
+      values.push(city);
+    }
+    if (state !== undefined) {
+      updates.push(`state = $${paramIndex++}`);
+      values.push(state);
+    }
+    if (pincode !== undefined) {
+      updates.push(`pincode = $${paramIndex++}`);
+      values.push(pincode);
+    }
 
     if (updates.length === 0) {
       return res.status(400).json({ message: 'No fields to update' });
@@ -75,7 +91,7 @@ async function updateProfile(req, res, next) {
     values.push(userId);
 
     const result = await query(
-      `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, name, email, phone, role, is_active`,
+      `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, name, email, phone, role, is_active, address, city, state, pincode`,
       values
     );
 

@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { serviceReportApi } from '../../api/serviceReportApi';
 import { ticketApi } from '../../api/ticketApi';
 import { GlassCard, Button, Input } from '../../components/ui/Components';
-import { UploadCloud, Image as ImageIcon } from 'lucide-react';
+import { UploadCloud, Image as ImageIcon, X } from 'lucide-react';
 
 import { LoadingPage } from '../../components/ui/Loading';
 
@@ -76,6 +76,15 @@ const ServiceReportPage = () => {
     }
   };
 
+  const handleClearSelectedFile = (e) => {
+    e.stopPropagation();
+    setSelectedFile(null);
+    setPreviewUrl('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleAddImage = (e) => {
     e.preventDefault();
     if (!previewUrl) return;
@@ -138,7 +147,17 @@ const ServiceReportPage = () => {
                 className="border-2 border-dashed border-slate-300 rounded-xl p-6 flex flex-col items-center justify-center text-slate-500 cursor-pointer hover:bg-slate-50 hover:border-primary-400 transition-colors"
               >
                 {previewUrl ? (
-                  <img src={previewUrl} alt="Preview" className="h-32 object-cover rounded-lg" />
+                  <div className="relative">
+                    <img src={previewUrl} alt="Preview" className="h-32 object-cover rounded-lg" />
+                    <button
+                      type="button"
+                      onClick={handleClearSelectedFile}
+                      className="absolute -top-2 -right-2 p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full transition-colors shadow-md flex items-center justify-center z-10"
+                      title="Remove image"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 ) : (
                   <>
                     <UploadCloud className="w-8 h-8 mb-2 text-slate-400" />

@@ -135,11 +135,17 @@ export const AdminDashboard = () => {
             {mounted && stats?.weeklyTicketVolume && (
               <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                 <BarChart data={stats.weeklyTicketVolume}>
+                  <defs>
+                    <linearGradient id="colorTickets" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.85}/>
+                      <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.25}/>
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b'}} />
-                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b'}} />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
                   <Tooltip cursor={{fill: '#f1f5f9'}} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} />
-                  <Bar dataKey="tickets" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="tickets" fill="url(#colorTickets)" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -151,21 +157,21 @@ export const AdminDashboard = () => {
           </div>
         </GlassCard>
 
-        <GlassCard dark className="bg-slate-800 text-white">
-          <h2 className="text-lg font-bold mb-6">Pending Actions</h2>
+        <GlassCard>
+          <h2 className="text-lg font-bold text-slate-800 mb-6">Pending Actions</h2>
           <div className="space-y-4">
-            <div className="bg-slate-700/50 p-5 rounded-2xl border border-slate-600/50">
-              <p className="font-medium text-sm text-slate-300">Unassigned Tickets</p>
+            <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-100 hover:border-slate-200 transition-all hover:shadow-[0_4px_20px_rgb(0,0,0,0.02)]">
+              <p className="font-semibold text-sm text-slate-500">Unassigned Tickets</p>
               <div className="flex justify-between items-center mt-3">
-                <span className="text-3xl font-extrabold">{stats?.unassignedTickets || 0}</span>
-                <Link to="/admin/tickets" className="text-xs bg-white text-slate-900 px-4 py-2 rounded-xl font-bold hover:bg-slate-200 transition-colors">Assign Now</Link>
+                <span className="text-3xl font-extrabold text-slate-800">{stats?.unassignedTickets || 0}</span>
+                <Link to="/admin/tickets" className="text-xs bg-primary-600 text-white px-4 py-2.5 rounded-xl font-bold hover:bg-primary-700 transition-colors shadow-sm shadow-primary-500/10">Assign Now</Link>
               </div>
             </div>
-            <div className="bg-slate-700/50 p-5 rounded-2xl border border-slate-600/50">
-              <p className="font-medium text-sm text-slate-300">Pending Settlements</p>
+            <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-100 hover:border-slate-200 transition-all hover:shadow-[0_4px_20px_rgb(0,0,0,0.02)]">
+              <p className="font-semibold text-sm text-slate-500">Pending Settlements</p>
               <div className="flex justify-between items-center mt-3">
-                <span className="text-3xl font-extrabold">{stats?.pendingSettlements || 0}</span>
-                <Link to="/admin/settlements" className="text-xs bg-white text-slate-900 px-4 py-2 rounded-xl font-bold hover:bg-slate-200 transition-colors">Process</Link>
+                <span className="text-3xl font-extrabold text-slate-800">{stats?.pendingSettlements || 0}</span>
+                <Link to="/admin/settlements" className="text-xs bg-primary-600 text-white px-4 py-2.5 rounded-xl font-bold hover:bg-primary-700 transition-colors shadow-sm shadow-primary-500/10">Process</Link>
               </div>
             </div>
           </div>
