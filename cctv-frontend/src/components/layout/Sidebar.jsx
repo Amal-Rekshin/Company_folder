@@ -1,11 +1,12 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Ticket, Users, User, Briefcase, FileText, CreditCard, Settings, LogOut, MessageSquare, Target, FileSignature } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = ({ isOpen }) => {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const currentPath = location.pathname;
 
   const isActiveItem = (itemPath) => {
@@ -36,6 +37,7 @@ const Sidebar = ({ isOpen }) => {
           { name: 'Technicians', icon: Briefcase, path: '/admin/technicians' },
           { name: 'Partners', icon: Users, path: '/admin/partners' },
           { name: 'Settlements', icon: CreditCard, path: '/admin/settlements' },
+          { name: 'Invoices', icon: FileText, path: '/admin/invoices' },
         ];
       case 'technician':
         return [
@@ -63,7 +65,10 @@ const Sidebar = ({ isOpen }) => {
   return (
     <aside className={`fixed lg:static inset-y-0 left-0 z-30 w-64 bg-white border-r border-slate-200 text-slate-600 transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
       <div className="flex items-center justify-center h-16 border-b border-slate-200">
-        <h1 className="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
+        <h1 
+          className="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={() => navigate('/')}
+        >
           <div className="w-8 h-8 rounded-md bg-primary-600 shadow-sm flex items-center justify-center">
             <span className="text-white font-extrabold text-sm">C</span>
           </div>

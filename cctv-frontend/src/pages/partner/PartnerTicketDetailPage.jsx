@@ -28,9 +28,12 @@ const STATUS_MAP = {
 
 /* ─── Timeline steps (partner view) ───────────────────────────────────────────── */
 const TIMELINE_STEPS = [
-  { key: 'partner_assigned', label: 'Assigned to You' },
-  { key: 'partner_accepted', label: 'Accepted'        },
-  { key: 'completed',        label: 'Completed'       },
+  { key: 'new',              label: 'Created' },
+  { key: 'partner_assigned', label: 'Assigned' },
+  { key: 'on_site',          label: 'On Site' },
+  { key: 'work_in_progress', label: 'In Progress' },
+  { key: 'completed',        label: 'Completed' },
+  { key: 'closed',           label: 'Closed' }
 ];
 
 const REJECTED_STEPS = [
@@ -42,9 +45,12 @@ const STEP_ORDER = TIMELINE_STEPS.map(s => s.key);
 
 // Map all intermediate statuses back to the right step index for the partner
 function getActiveStep(status) {
-  if (['completed', 'closed'].includes(status)) return 2;
-  if (['partner_accepted', 'technician_assigned', 'accepted', 'visit_scheduled', 'on_site', 'work_in_progress'].includes(status)) return 1;
-  return 0; // new, partner_assigned, or anything else
+  if (status === 'closed') return 5;
+  if (status === 'completed') return 4;
+  if (['work_in_progress', 'estimate_pending', 'estimate_approved'].includes(status)) return 3;
+  if (['on_site'].includes(status)) return 2;
+  if (['assigned', 'partner_assigned', 'partner_accepted', 'technician_assigned', 'accepted', 'visit_scheduled'].includes(status)) return 1;
+  return 0; // new
 }
 
 /* ─── Status badge ───────────────────────────────────────────────────────── */
@@ -79,6 +85,7 @@ const PartnerTicketDetailPage = () => {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [technicianName, setTechnicianName] = useState('');
   const [actionError, setActionError] = useState('');
+  const [manualStatus, setManualStatus] = useState('');
 
   /* ── Ticket ── */
   const { data: ticket, isLoading: ticketLoading } = useQuery({
@@ -135,6 +142,12 @@ const PartnerTicketDetailPage = () => {
       return assignmentApi.partnerAssignTech(assignmentId, { technicianName: technicianName.trim() });
     },
     onSuccess: () => { setActionError(''); setTechnicianName(''); invalidate(); },
+    onError: (err) => setActionError(err.response?.data?.error || err.message),
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: (newStatus) => ticketApi.updateStatus(id, newStatus),
+    onSuccess: () => { setActionError(''); invalidate(); },
     onError: (err) => setActionError(err.response?.data?.error || err.message),
   });
 
@@ -444,6 +457,47 @@ const PartnerTicketDetailPage = () => {
               <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-sm text-emerald-700 flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 <span>This ticket has been <strong>completed</strong>. Great work!</span>
+              </div>
+            )}
+
+            {/* ── Manual Status Updates (Forward Only) ── */}
+            {!['closed', 'cancelled', 'rejected', 'new', 'assigned', 'partner_assigned'].includes(ticket?.status) && (
+              <div className="mt-4 pt-4 border-t border-slate-100">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Update Progress</p>
+                
+                <div className="flex flex-col gap-3">
+                  {['partner_accepted', 'technician_assigned', 'accepted', 'visit_scheduled'].includes(ticket?.status) && (
+                    <button
+                      onClick={() => updateStatusMutation.mutate('on_site')}
+                      disabled={updateStatusMutation.isPending}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-all font-medium text-sm"
+                    >
+                      <MapPin className="w-4 h-4" /> Mark as On-Site
+                    </button>
+                  )}
+                  
+                  {ticket?.status === 'on_site' && (
+                    <button
+                      onClick={() => updateStatusMutation.mutate('work_in_progress')}
+                      disabled={updateStatusMutation.isPending}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-yellow-200 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 transition-all font-medium text-sm"
+                    >
+                      <Wrench className="w-4 h-4" /> Start Work (In Progress)
+                    </button>
+                  )}
+                  
+                  {['work_in_progress', 'estimate_pending', 'estimate_approved'].includes(ticket?.status) && (
+                    <button
+                      onClick={() => updateStatusMutation.mutate('completed')}
+                      disabled={updateStatusMutation.isPending}
+                      className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold text-sm py-3 px-4 rounded-xl transition-all"
+                    >
+                      <CheckCircle2 className="w-4 h-4" /> 
+                      {updateStatusMutation.isPending ? 'Updating...' : 'Mark as Complete'}
+                    </button>
+                  )}
+
+                </div>
               </div>
             )}
 

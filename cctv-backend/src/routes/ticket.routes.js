@@ -8,7 +8,7 @@ router.get('/my', verifyToken, requireRole('customer'), ctrl.getMyTickets);
 router.get('/my-queries', verifyToken, requireRole('customer'), ctrl.getMyQueries);
 router.get('/my-assigned', verifyToken, requireRole('partner', 'technician'), ctrl.getMyAssignedTickets);
 router.get('/:id', verifyToken, ctrl.getTicketById);
-router.patch('/:id/status', verifyToken, requireRole('admin', 'technician'), ctrl.updateStatus);
+router.patch('/:id/status', verifyToken, requireRole('admin', 'technician', 'partner'), ctrl.updateStatus);
 router.patch('/:id/close', verifyToken, requireRole('customer'), ctrl.closeTicket);
 router.post('/:id/reopen', verifyToken, requireRole('customer'), ctrl.reopenTicket);
 router.get('/:id/status-log', verifyToken, ctrl.getStatusLog);

@@ -6,18 +6,18 @@ async function createReport(req, res, next) {
   try {
     const ticketId = req.params.id;
     const technicianId = req.user.id;
-    const { inspectionNotes, workDone, partsReplaced, customerSignatureUrl } = req.body;
+    const { inspectionNotes, workDone, recommendations, materialsUsed, partsReplaced, customerSignatureUrl } = req.body;
 
     const ticketCheck = await query('SELECT id FROM tickets WHERE id = $1', [ticketId]);
     if (ticketCheck.rows.length === 0) throw new AppError('Ticket not found', 404);
 
     const result = await query(
       `INSERT INTO service_reports
-         (ticket_id, technician_id, inspection_notes, work_done, parts_replaced,
+         (ticket_id, technician_id, inspection_notes, work_done, recommendations, materials_used, parts_replaced,
           customer_signature_url, completed_at)
-       VALUES ($1, $2, $3, $4, $5, $6, NOW())
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
        RETURNING *`,
-      [ticketId, technicianId, inspectionNotes || null, workDone || null,
+      [ticketId, technicianId, inspectionNotes || null, workDone || null, recommendations || null, materialsUsed || null,
        partsReplaced || null, customerSignatureUrl || null]
     );
     return res.status(201).json(result.rows[0]);

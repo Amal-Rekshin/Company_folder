@@ -209,8 +209,12 @@ const TicketDetailPage = () => {
             ) : ticket.status === 'completed' ? (
               <div className="bg-emerald-50 p-5 rounded-sm border border-emerald-200 text-center">
                 <p className="text-emerald-900 font-bold mb-2 text-base">Work Completed</p>
-                <p className="text-sm text-emerald-700 mb-6 leading-relaxed">The technician has marked this job as completed. Please confirm to close the ticket.</p>
-                <Button onClick={() => closeTicketMutation.mutate()} disabled={closeTicketMutation.isPending} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-sm shadow-none">Confirm & Close</Button>
+                <p className="text-sm text-emerald-700 mb-6 leading-relaxed">
+                  The technician has marked this job as completed. Please {isAdmin ? 'check' : 'pay'} the generated invoice to close the ticket.
+                </p>
+                <Button onClick={() => window.location.href = isAdmin ? '/admin/invoices' : '/customer/invoices'} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-sm shadow-none">
+                  {isAdmin ? 'View Invoice' : 'View Invoice & Pay'}
+                </Button>
               </div>
             ) : ticket.status === 'closed' ? (
                <div className="bg-blue-50 p-5 rounded-sm border border-blue-200 text-center">

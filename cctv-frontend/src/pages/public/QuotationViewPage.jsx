@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { publicApi } from '../../api/publicApi';
 import { Button, Badge } from '../../components/ui/Components';
@@ -22,7 +22,7 @@ const QuotationViewPage = () => {
     mutationFn: () => publicApi.acceptQuotation(token),
     onSuccess: (res) => {
       alert(`Quotation Accepted! Your ticket number is: ${res.data.ticketNumber}`);
-      navigate('/');
+      navigate('/customer/tickets');
     }
   });
 
@@ -30,7 +30,7 @@ const QuotationViewPage = () => {
     mutationFn: () => publicApi.rejectQuotation(token, rejectReason),
     onSuccess: () => {
       alert('Quotation Rejected.');
-      navigate('/');
+      navigate('/customer/tickets');
     }
   });
 
@@ -57,7 +57,9 @@ const QuotationViewPage = () => {
             {/* Top Section */}
             <div className="flex flex-col sm:flex-row justify-between items-start mb-14 gap-6">
               <div>
-                <h1 className="text-4xl font-black text-slate-800 tracking-tight mb-1">CCTV PRO</h1>
+                <Link to="/">
+                  <h1 className="text-4xl font-black text-slate-800 tracking-tight mb-1 cursor-pointer hover:opacity-80 transition-opacity">CCTV PRO</h1>
+                </Link>
                 <p className="text-xs text-slate-500 font-bold tracking-widest uppercase">Professional Security Solutions</p>
               </div>
               <div className="text-left sm:text-right">

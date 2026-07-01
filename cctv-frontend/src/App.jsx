@@ -13,6 +13,7 @@ import MyTicketsPage from './pages/customer/MyTicketsPage';
 import CreateTicketPage from './pages/customer/CreateTicketPage';
 import TicketDetailPage from './pages/customer/TicketDetailPage';
 import PaymentPage from './pages/customer/PaymentPage';
+import CustomerInvoicesPage from './pages/customer/CustomerInvoicesPage';
 import CustomerProfilePage from './pages/customer/CustomerProfilePage';
 
 // Admin Pages
@@ -22,6 +23,7 @@ import TechnicianDetailPage from './pages/admin/TechnicianDetailPage';
 import PartnerManagementPage from './pages/admin/PartnerManagementPage';
 import PartnerDetailPage from './pages/admin/PartnerDetailPage';
 import SettlementPage from './pages/admin/SettlementPage';
+import AdminInvoicesPage from './pages/admin/AdminInvoicesPage';
 
 // Technician Pages
 import MyJobsPage from './pages/technician/MyJobsPage';
@@ -33,7 +35,7 @@ import IncomingTicketsPage from './pages/partner/IncomingTicketsPage';
 import EarningsPage from './pages/partner/EarningsPage';
 
 // Public Pages
-import PublicQueryPage from './pages/public/PublicQueryPage';
+import LandingPage from './pages/public/LandingPage';
 import QueryThankYouPage from './pages/public/QueryThankYouPage';
 import QuotationViewPage from './pages/public/QuotationViewPage';
 
@@ -57,7 +59,7 @@ const App = () => {
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/query" element={<PublicQueryPage />} />
+            <Route path="/query" element={<Navigate to="/" replace />} />
             <Route path="/query/thank-you" element={<QueryThankYouPage />} />
             <Route path="/quotation/:token" element={<QuotationViewPage />} />
             
@@ -67,7 +69,7 @@ const App = () => {
                 <Route path="/customer/tickets" element={<MyTicketsPage />} />
                 <Route path="/customer/tickets/new" element={<CreateTicketPage />} />
                 <Route path="/customer/tickets/:id" element={<TicketDetailPage />} />
-                <Route path="/customer/invoices" element={<PaymentPage />} />
+                <Route path="/customer/invoices" element={<CustomerInvoicesPage />} />
                 <Route path="/customer/profile" element={<CustomerProfilePage />} />
                 <Route path="/customer/settings" element={<SettingsPage />} />
               </Route>
@@ -83,6 +85,7 @@ const App = () => {
                 <Route path="/admin/partners" element={<PartnerManagementPage />} />
                 <Route path="/admin/partners/:id" element={<PartnerDetailPage />} />
                 <Route path="/admin/settlements" element={<SettlementPage />} />
+                <Route path="/admin/invoices" element={<AdminInvoicesPage />} />
                 <Route path="/admin/reports" element={<ReportsPage />} />
                 
                 {/* CRM Routes */}
@@ -115,7 +118,7 @@ const App = () => {
               </Route>
             </Route>
 
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/" element={<LandingPage />} />
           </Routes>
         </AuthProvider>
       </Router>

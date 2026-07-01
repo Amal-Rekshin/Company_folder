@@ -30,8 +30,14 @@ const CreateTicketPage = () => {
 
   const handleCheckboxChange = (e) => {
     const checked = e.target.checked;
-    setUseSavedAddress(checked);
+    
     if (checked && profile) {
+      if (!profile.address && !profile.city) {
+        alert("You don't have a saved address in your profile yet. Please enter your address below.");
+        setUseSavedAddress(false);
+        return;
+      }
+      setUseSavedAddress(true);
       setFormData(prev => ({
         ...prev,
         address: profile.address || '',
@@ -40,6 +46,7 @@ const CreateTicketPage = () => {
         pincode: profile.pincode || ''
       }));
     } else {
+      setUseSavedAddress(false);
       setFormData(prev => ({
         ...prev,
         address: '',
@@ -95,6 +102,7 @@ const CreateTicketPage = () => {
                 <option value="complaint">Complaint / Repair</option>
                 <option value="installation">New Installation</option>
                 <option value="amc_support">AMC Support</option>
+                <option value="device_replacement">Device Replacement</option>
               </select>
             </div>
             <div>
@@ -136,27 +144,28 @@ const CreateTicketPage = () => {
             <div className="mb-4">
               <label className="block text-sm font-medium text-slate-700 mb-1">Street Address</label>
               <textarea 
-                className="input-field resize-none" 
+                className="input-field resize-none disabled:opacity-60 disabled:bg-slate-50" 
                 required 
                 rows={2}
                 value={formData.address} 
                 onChange={e => setFormData({...formData, address: e.target.value})} 
                 placeholder="123 Main St, Apt 4B"
+                disabled={useSavedAddress}
               />
             </div>
 
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">City</label>
-                <input type="text" className="input-field" required value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} />
+                <input type="text" className="input-field disabled:opacity-60 disabled:bg-slate-50" required value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} disabled={useSavedAddress} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">State</label>
-                <input type="text" className="input-field" required value={formData.state} onChange={e => setFormData({...formData, state: e.target.value})} />
+                <input type="text" className="input-field disabled:opacity-60 disabled:bg-slate-50" required value={formData.state} onChange={e => setFormData({...formData, state: e.target.value})} disabled={useSavedAddress} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Pincode</label>
-                <input type="text" className="input-field" required value={formData.pincode} onChange={e => setFormData({...formData, pincode: e.target.value})} />
+                <input type="text" className="input-field disabled:opacity-60 disabled:bg-slate-50" required value={formData.pincode} onChange={e => setFormData({...formData, pincode: e.target.value})} disabled={useSavedAddress} />
               </div>
             </div>
           </div>

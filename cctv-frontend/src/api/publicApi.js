@@ -10,5 +10,6 @@ export const publicApi = {
   submitQuery: (data) => publicAxios.post('/queries', data),
   getQuotation: (token) => publicAxios.get(`/quotations/${token}`),
   acceptQuotation: (token) => publicAxios.patch(`/quotations/${token}/accept`),
-  rejectQuotation: (token, reason) => publicAxios.patch(`/quotations/${token}/reject`, { reason })
+  rejectQuotation: (token, reason) => publicAxios.patch(`/quotations/${token}/reject`, { reason }),
+  getIssueCategories: () => publicAxios.get('/issue-categories')
 };

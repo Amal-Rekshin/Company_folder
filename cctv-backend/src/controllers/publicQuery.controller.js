@@ -152,4 +152,20 @@ async function rejectQuotation(req, res, next) {
   }
 }
 
-module.exports = { submitQuery, getQuotationByToken, acceptQuotation, rejectQuotation };
+// GET /api/public/issue-categories
+async function getIssueCategories(req, res, next) {
+  try {
+    const categories = [
+      { id: 'installation', name: 'New Installation' },
+      { id: 'amc_support', name: 'AMC Support' },
+      { id: 'complaint', name: 'Complaint / Repair' },
+      { id: 'device_replacement', name: 'Device Replacement' },
+      { id: 'other', name: 'Other' }
+    ];
+    return res.json(categories);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { submitQuery, getQuotationByToken, acceptQuotation, rejectQuotation, getIssueCategories };

@@ -7,13 +7,13 @@ const VALID_TRANSITIONS = {
   new: ['assigned', 'partner_assigned', 'cancelled'],
   assigned: ['technician_assigned', 'new', 'cancelled'],
   partner_assigned: ['partner_accepted', 'new', 'cancelled'],
-  partner_accepted: ['technician_assigned', 'cancelled'],
-  technician_assigned: ['accepted', 'new', 'cancelled'],
-  accepted: ['visit_scheduled', 'on_site', 'estimate_pending', 'cancelled'],
-  visit_scheduled: ['on_site', 'cancelled'],
-  on_site: ['work_in_progress', 'estimate_pending'],
+  partner_accepted: ['technician_assigned', 'completed', 'cancelled'],
+  technician_assigned: ['accepted', 'completed', 'new', 'cancelled'],
+  accepted: ['visit_scheduled', 'on_site', 'work_in_progress', 'estimate_pending', 'completed', 'cancelled'],
+  visit_scheduled: ['on_site', 'work_in_progress', 'completed', 'cancelled'],
+  on_site: ['work_in_progress', 'estimate_pending', 'completed'],
   work_in_progress: ['estimate_pending', 'completed'],
-  estimate_pending: ['estimate_approved', 'estimate_pending'],
+  estimate_pending: ['estimate_approved', 'completed'],
   estimate_approved: ['completed'],
   completed: ['closed', 'reopened'],
   closed: ['reopened'],
@@ -21,7 +21,9 @@ const VALID_TRANSITIONS = {
   cancelled: [],
 };
 
-function validateTransition(from, to) {
+function validateTransition(from, to, role) {
+  if (['admin', 'partner'].includes(role)) return; // Allow manual overrides
+
   const allowed = VALID_TRANSITIONS[from] || [];
   if (!allowed.includes(to)) {
     throw new AppError(
@@ -226,7 +228,11 @@ async function updateStatus(req, res, next) {
     if (ticketResult.rows.length === 0) throw new AppError('Ticket not found', 404);
     const ticket = ticketResult.rows[0];
 
-    validateTransition(ticket.status, newStatus.toLowerCase());
+    if (newStatus.toLowerCase() === 'closed') {
+      throw new AppError('Cannot manually close ticket. It automatically closes upon full invoice payment.', 403);
+    }
+
+    validateTransition(ticket.status, newStatus.toLowerCase(), req.user.role);
 
     await client.query(
       `UPDATE tickets SET status = $1, updated_at = NOW() WHERE id = $2`,
@@ -238,6 +244,24 @@ async function updateStatus(req, res, next) {
        VALUES ($1, $2, $3, $4, $5)`,
       [ticketId, ticket.status, newStatus.toLowerCase(), changedBy, note || null]
     );
+
+    // Auto-generate invoice when marked as completed
+    if (newStatus.toLowerCase() === 'completed' && ticket.status !== 'completed') {
+      let amount = 0;
+      if (ticket.quotation_id) {
+        const quoteRes = await client.query('SELECT total_amount FROM quotations WHERE id = $1', [ticket.quotation_id]);
+        if (quoteRes.rows.length > 0) {
+          amount = quoteRes.rows[0].total_amount;
+        }
+      }
+      
+      const payment_qr = `upi://pay?pa=cctvpro@upi&pn=CCTV%20Pro&am=${amount}&tr=${ticket.ticket_number}`;
+      
+      await client.query(
+        `INSERT INTO invoices (ticket_id, customer_id, amount, payment_qr) VALUES ($1, $2, $3, $4)`,
+        [ticketId, ticket.customer_id, amount, payment_qr]
+      );
+    }
 
     await client.query('COMMIT');
 

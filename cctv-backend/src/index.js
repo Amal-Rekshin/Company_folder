@@ -18,6 +18,7 @@ const notificationRoutes = require('./routes/notification.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
 const publicQueryRoutes = require('./routes/publicQuery.routes');
 const settlementRoutes = require('./routes/settlement.routes');
+const invoiceRoutes = require('./routes/invoice.routes');
 
 // Admin routes
 const adminRoutes = require('./routes/admin/admin.routes');
@@ -54,6 +55,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/public', publicQueryRoutes);
 app.use('/api', settlementRoutes);
+app.use('/api', invoiceRoutes);
 
 // Admin routes (prefixed at /api/admin/*)
 app.use('/api/admin', adminRoutes);

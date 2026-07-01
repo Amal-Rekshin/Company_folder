@@ -416,6 +416,18 @@ async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT NOW()
       );
 
+      CREATE TABLE IF NOT EXISTS invoices (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        ticket_id UUID REFERENCES tickets(id) ON DELETE CASCADE,
+        customer_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        amount DECIMAL(10,2) NOT NULL,
+        paid_amount DECIMAL(10,2) DEFAULT 0,
+        status VARCHAR(50) DEFAULT 'pending',
+        payment_qr TEXT,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+
       CREATE TABLE IF NOT EXISTS feedbacks (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         ticket_id UUID REFERENCES tickets(id) ON DELETE CASCADE,

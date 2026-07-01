@@ -5,5 +5,6 @@ router.post('/queries', ctrl.submitQuery);
 router.get('/quotations/:token', ctrl.getQuotationByToken);
 router.patch('/quotations/:token/accept', ctrl.acceptQuotation);
 router.patch('/quotations/:token/reject', ctrl.rejectQuotation);
+router.get('/issue-categories', ctrl.getIssueCategories);
 
 module.exports = router;
